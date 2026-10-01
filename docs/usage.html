@@ -64,12 +64,14 @@ node src/cli.js -i "D:\Wedding" --keep-metadata</code></pre>
   <tr><td><code>-w, --workers &lt;n&gt;</code></td><td><code>auto</code></td><td>จำนวนรูปที่ประมวลผลพร้อมกัน (auto = จำนวนคอร์ CPU)</td></tr>
   <tr><td><code>--no-recursive</code></td><td>recursive</td><td>ไม่ลงไปในโฟลเดอร์ย่อย</td></tr>
   <tr><td><code>--overwrite</code></td><td>ปิด</td><td>แปลงซ้ำทุกไฟล์ (default ข้ามไฟล์ที่มีผลลัพธ์แล้ว = resume)</td></tr>
+  <tr><td><code>--skip-smaller</code></td><td>ปิด</td><td>ข้ามรูปที่ด้านยาวสุด ≤ limit อยู่แล้วโดยไม่แปลง (ชุดรูปผสมจะเร็วขึ้นมาก — รูปพวกนั้นจะไม่กลายเป็น JPG)</td></tr>
   <tr><td><code>--keep-metadata</code></td><td>ปิด</td><td>เก็บ EXIF/GPS (default ตัดทิ้ง แต่คง ICC colour profile เสมอ)</td></tr>
   <tr><td><code>--mozjpeg</code></td><td>ปิด</td><td>ใช้ mozjpeg — เล็กลง ~30% แต่ช้าลง 2–3 เท่า</td></tr>
   <tr><td><code>--dry-run</code></td><td>ปิด</td><td>วางแผน + log อย่างเดียว ไม่เขียนรูป</td></tr>
   <tr><td><code>--log-level &lt;lvl&gt;</code></td><td><code>info</code></td><td>debug · info · warn · error</td></tr>
   <tr><td><code>--log-dir &lt;dir&gt;</code></td><td><code>&lt;output&gt;/_logs</code></td><td>โฟลเดอร์เก็บไฟล์ log</td></tr>
   <tr><td><code>--sharp-concurrency &lt;n|auto&gt;</code></td><td><code>1</code> เมื่อ workers&gt;1</td><td>จำกัดเธรดภายใน libvips (ขั้นสูง — ดู <a href="research.html">RESEARCH</a>)</td></tr>
+  <tr><td><code>UV_THREADPOOL_SIZE</code> (env)</td><td>จำนวนคอร์</td><td>ขนาด libuv threadpool ที่ sharp ใช้จริง — เครื่องมือตั้งให้เองแล้วผ่าน <code>src/entry.mjs</code> / launcher</td></tr>
   <tr><td><code>--quiet</code></td><td>ปิด</td><td>ซ่อน progress bar แสดงเฉพาะ error</td></tr>
 </table>
 

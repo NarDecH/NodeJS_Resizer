@@ -60,20 +60,36 @@ export async function runResize(opts, appMeta) {
 
   // libvips spawns its own threads per operation; pin it to 1 when we drive
   // many files in parallel so we never oversubscribe the CPU (see RESEARCH.md).
+  // Pipelines themselves run on Node's libuv threadpool — sized by UV_THREADPOOL_SIZE
+  // in src/entry.mjs / the launchers. Leaving libvips at 'auto' with many workers
+  // makes all pipelines fight over one shared thread pool (measured −30%).
   const sc = opts.sharpConcurrency;
   sharp.concurrency(sc === undefined ? (opts.workers > 1 ? 1 : 0) : (sc === 'auto' ? 0 : sc));
-  sharp.cache(50);
+  // single-shot conversion gains nothing from vips' operation cache — turn it off
+  sharp.cache(opts.cache === undefined ? 0 : opts.cache);
 
   await runPool(files, opts.workers, async (file, i) => {
     const relDir = opts.recursive ? path.dirname(path.relative(opts.input, file)) : '';
     if (opts.dryRun) {
       let meta = null;
       try { meta = await sharp(file, { failOn: 'none' }).metadata(); } catch { /* reported below */ }
+      const swap = (meta?.orientation ?? 1) >= 5;
+      const wIn = meta ? (swap ? meta.height : meta.width) : null;
+      const hIn = meta ? (swap ? meta.width : meta.height) : null;
+      const within = meta && Math.max(wIn, hIn) <= opts.maxSize;
+      if (within && opts.skipSmaller) {
+        return {
+          input: file, output: null, status: 'skipped',
+          widthIn: wIn, heightIn: hIn, widthOut: null, heightOut: null,
+          formatIn: meta?.format ?? null, bytesIn: meta?.size ?? null, bytesOut: null,
+          durationMs: null, note: 'already within limit (--skip-smaller)',
+        };
+      }
       return {
         input: file,
         output: path.join(opts.output, relDir, path.basename(file, path.extname(file)) + '.jpg'),
         status: meta ? 'converted' : 'error',
-        widthIn: meta?.width ?? null, heightIn: meta?.height ?? null,
+        widthIn: wIn, heightIn: hIn,
         widthOut: null, heightOut: null,
         formatIn: meta?.format ?? null,
         bytesIn: meta?.size ?? null, bytesOut: null,
@@ -87,6 +103,7 @@ export async function runResize(opts, appMeta) {
       mozjpeg: opts.mozjpeg,
       keepMetadata: opts.keepMetadata,
       overwrite: opts.overwrite,
+      skipSmaller: opts.skipSmaller,
       logger,
     }, relDir === '.' ? '' : relDir);
   }, (r) => {

@@ -10,6 +10,8 @@ Node.js CLI สำหรับย่อรูปทั้งโฟลเดอ�
 ## โครงสร้าง
 
 ```
+src/entry.mjs       process entry — ตั้ง UV_THREADPOOL_SIZE = คอร์ก่อน pool ถูกสร้าง แล้วค่อย import cli.js
+                    (สำคัญมาก: libuv pool ถูกสร้างครั้งเดียวและอ่าน env ครั้งเดียว — อย่าย้ายไปไว้หลัง import sharp)
 src/cli.js          entry point, แยกวิเคราะห์ args (commander), interactive mode เมื่อไม่ส่ง args
 src/run.js          orchestrator: scan → pool → progress → summary → flush log
 src/scanner.js      เดินโฟลเดอร์ กรองนามสกุลรูป ตัด output ทิ้งจากผลสแกนเสมอ
@@ -17,7 +19,8 @@ src/converter.js    pipeline ต่อรูป: metadata → rotate(EXIF) → r
 src/pool.js         worker pool แบบ fixed-size (ไม่ใช้ worker_threads — libvips มีเธรด C++ ของตัวเอง)
 src/logger.js       dual-format logger (.log/.jsonl), เขียนทีเดียวตอน flush (ทน crash ระหว่างรัน)
 src/interactive.js  prompts สำหรับดับเบิลคลิก resize.bat, ตัด quote จาก drag&drop
-scripts/            make-samples (รูปทดสอบ), benchmark (วัด concurrency), test-run (e2e)
+scripts/            make-samples (รูปทดสอบ), benchmark (parent+child — วัด concurrency),
+                    gen-chart (กราฟ SVG จาก bench/results.json), test-run (e2e)
 docs/               เอกสาร md + html + assets/svg — โฮสต์บน GitHub Pages (main branch, /docs)
 ```
 
@@ -28,8 +31,10 @@ docs/               เอกสาร md + html + assets/svg — โฮสต�
 3. **เขียนไฟล์ผลลัพธ์แบบ atomic**: `.part` แล้ว rename — เพื่อให้ resume-safe และไม่มีไฟล์ครึ่ง ๆ กลาง ๆ
 4. **skip existing output คือ default** (`--overwrite` เพื่อ force) — อย่าสลับ
 5. **คงสีด้วย `.keepIccProfile()` เมื่อตัด EXIF**; `.rotate()` ต้องมาก่อน `.resize()` เสมอ
-6. **sharp.concurrency(1) เมื่อ workers > 1** — ผ่านการ benchmark แล้วว่าให้ throughput สูงสุด
-   (ข้อมูลใน docs/RESEARCH.md) — ห้ามเปลี่ยนโดยไม่ benchmark ใหม่
+6. **Performance model (ห้ามทลายโดยไม่ benchmark ใหม่)** — sharp รัน pipeline บน libuv threadpool ของ Node
+   ซึ่ง default มีแค่ 4 เธรด (คอขวดจริง): `src/entry.mjs` และ launchers ตั้ง `UV_THREADPOOL_SIZE` = จำนวนคอร์ให้ก่อนเสมอ;
+   `sharp.concurrency(1)` เมื่อ workers > 1 (ปล่อย auto = หลาย pipeline แย่ง vips pool เดียวกัน, ช้ากว่าถึง −30%);
+   `sharp.cache(0)`; ข้อมูลวัด: 262 MP/s, CPU 94% บน i9-9900K (docs/RESEARCH.md)
 7. **รู้เสมอว่าไฟล์ใดเสีย = error ต่อไฟล์ ไม่ crash ทั้งรัน** exit code: 0 สำเร็จ, 2 มี error บางไฟล์, 1 ระบบล้ม
 8. แก้พฤติกรรมใด ๆ แล้ว **ต้องรัน `npm test` ให้ผ่าน** และอัปเดต docs/CHANGELOG.md
 
@@ -37,6 +42,7 @@ docs/               เอกสาร md + html + assets/svg — โฮสต�
 
 - Windows + Git Bash; `node` อาจไม่อยู่ใน PATH — ใช้ `export PATH="/c/Program Files/nodejs:$PATH"` ก่อน
 - Node >= 18.17, ESM (`"type": "module"`)
+- วัดประสิทธิภาพ: `node scripts/benchmark.js 48` (spawn child ที่ตั้ง UVT ให้เหมือน runtime จริง — อย่าวัดใน-process เพราะ env จะไม่มีผล)
 - ห้าม commit: `node_modules/`, `runtime/`, `bench/`, `test/samples/`, `*_resized*/`, `**/_logs/`, `__Photo/`
 - `__Photo/` (ถ้ามี) คือภาพถ่ายส่วนตัวของเจ้าของ repo — อ่านอย่างเดียว ห้าม copy ขึ้น repo หรือใส่ไปใน release
 

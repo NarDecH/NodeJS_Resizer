@@ -25,6 +25,18 @@
   <p>รูปแบบอ้างอิง Keep a Changelog · เวอร์ชันตาม SemVer</p>
 </div>
 
+<h2>v1.0.1 — 1 ตุลาคม 2026 <span class="badge">performance</span></h2>
+
+<h3>แก้คอขวดที่ซ่อนอยู่ (Performance)</h3>
+<ul>
+  <li>ตัวการจริงคือ <b>libuv threadpool ของ Node ที่ default มีแค่ 4 เธรด</b> — sharp รัน pipeline บน pool นี้ จึงมีงานพร้อมกันจริงแค่ 4 เสมอ (CPU วิ่ง ~53%)</li>
+  <li>ตั้ง <code>UV_THREADPOOL_SIZE</code> = จำนวนคอร์อัตโนมัติผ่าน <code>src/entry.mjs</code> และ launchers</li>
+  <li>ผลจริงบน i9-9900K: <b>185 → 262 MP/s (+42%)</b>, <b>CPU 53% → 94%</b> (ชุด 240 รูป: 21.5s → 14.8s)</li>
+  <li>ปิด vips operation cache — งานผ่านครั้งเดียวไม่ได้ประโยชน์จาก cache</li>
+  <li>เพิ่ม <code>--skip-smaller</code> — ข้ามรูปที่เล็กกว่า limit อยู่แล้วโดยไม่แปลง (ชุดรูปผสมเร็วขึ้นมาก)</li>
+  <li>วิเคราะห์ฉบับเต็ม 3 ก้าว (พบความผิดปกติ → ทดสอบยืนยัน → benchmark ทางการ) ใน <a href="research.html">RESEARCH</a></li>
+</ul>
+
 <h2>v1.0.0 — 1 ตุลาคม 2026 <span class="badge">release</span></h2>
 
 <h3>เพิ่มใหม่ (Added)</h3>
@@ -44,7 +56,7 @@
 
 <h3>ประสิทธิภาพ (i9-9900K, ภาพ 14.2 MP → 3800px, q82)</h3>
 <ul>
-  <li>~185 MP/s (~11.5 รูป/วินาที) ที่ workers 4–8+; เร่งจากเธรดเดียว 3.7 เท่า</li>
+  <li>v1.0.0: ~185 MP/s (CPU 53%) — แก้ต่อที่ v1.0.1 เหลือ 262 MP/s (CPU 94%); เร่งจากเธรดเดียว 5.1 เท่า</li>
   <li>ขนาดรวมลดลง 78% (233 MB → 51 MB) ในชุดทดสอบ 48 รูป</li>
 </ul>
 

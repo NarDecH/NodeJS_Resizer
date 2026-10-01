@@ -49,6 +49,9 @@ node src/cli.js -i "D:\Photos"           # รันซ้ำได้เรื�
 # เก็บ EXIF/GPS ไว้ด้วย (เช่น งานถ่ายภาพที่ต้องการข้อมูลกล้อง)
 node src/cli.js -i "D:\Wedding" --keep-metadata
 
+# ชุดรูปผสม (บางรูปเล็กอยู่แล้ว) — ข้ามรูปที่ไม่ต้องย่อ จะเร็วขึ้นมาก
+node src/cli.js -i "D:\Mixed" --skip-smaller
+
 # บังคับทำใหม่ทุกไฟล์ ทั้งที่เคยทำแล้ว
 node src/cli.js -i "D:\Photos" --overwrite
 ```
@@ -64,12 +67,14 @@ node src/cli.js -i "D:\Photos" --overwrite
 | `-w, --workers <n>` | `auto` | จำนวนรูปที่ประมวลผลพร้อมกัน (`auto` = จำนวนคอร์ CPU) |
 | `--no-recursive` | (recursive อยู่) | ไม่ลงไปในโฟลเดอร์ย่อย |
 | `--overwrite` | ปิด | แปลงซ้ำทุกไฟล์ (default = ข้ามไฟล์ที่มีผลลัพธ์แล้ว เพื่อ resume) |
+| `--skip-smaller` | ปิด | ข้ามรูปที่ด้านยาวสุด ≤ limit อยู่แล้วโดยไม่แปลง (ชุดรูปผสมจะเร็วขึ้นมาก — รูพวกนั้นจะไม่กลายเป็น JPG) |
 | `--keep-metadata` | ปิด | เก็บ EXIF/GPS (default ตัดทิ้ง แต่คง ICC colour profile ไว้เสมอ) |
 | `--mozjpeg` | ปิด | ใช้ mozjpeg — เล็กลง ~30% แต่ช้าลง 2–3 เท่า |
 | `--dry-run` | ปิด | วางแผน/สร้าง log อย่างเดียว ไม่เขียนรูป |
 | `--log-level <lvl>` | `info` | `debug` · `info` · `warn` · `error` |
 | `--log-dir <dir>` | `<output>/_logs` | โฟลเดอร์เก็บไฟล์ log |
 | `--sharp-concurrency <n\|auto>` | `1` เมื่อ workers>1 | จำกัดเธรดภายในของ libvips (ขั้นสูง — ดู RESEARCH.md) |
+| `UV_THREADPOOL_SIZE` (env) | จำนวนคอร์ | ขนาด libuv threadpool ที่ sharp ใช้จริง — เครื่องมือตั้งให้เองแล้วผ่าน `src/entry.mjs` / launcher; ตั้งเองได้เมื่อรันแบบขั้นสูง |
 | `--quiet` | ปิด | ซ่อน progress bar, แสดงเฉพาะ error |
 | `-V, --version` | — | ดูเวอร์ชัน |
 

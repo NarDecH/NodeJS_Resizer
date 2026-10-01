@@ -33,6 +33,7 @@
 <h2>โมดูล</h2>
 <table>
   <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+  <tr><td><code>src/entry.mjs</code></td><td>process entry — ตั้ง UV_THREADPOOL_SIZE = จำนวนคอร์ (default ของ libuv คือ 4 ซึ่งเป็นคอขวด) ก่อนโหลด CLI</td></tr>
   <tr><td><code>src/cli.js</code></td><td>entry — แยก args (commander); ถ้าไม่ส่ง args เข้า interactive prompts</td></tr>
   <tr><td><code>src/run.js</code></td><td>orchestrator — scan → sharp.concurrency() → worker pool → progress → summary → logger.flush()</td></tr>
   <tr><td><code>src/scanner.js</code></td><td>เดินโฟลเดอร์ กรองนามสกุลรูป 13 ชนิด, exclude output dir + _logs + hidden</td></tr>
@@ -56,7 +57,8 @@
 <h2>การตัดสินใจเด่น</h2>
 <table>
   <tr><th>คำถาม</th><th>คำตอบ</th></tr>
-  <tr><td>ทำไมไม่ใช้ worker_threads</td><td>งานฝั่ง JS ต่อรูปเบามาก คอขวดคือ decode/encode ใน C++ — libvips ขนานเองอยู่แล้ว (หลักฐาน: RESEARCH)</td></tr>
+  <tr><td>ทำไมไม่ใช้ worker_threads</td><td>งาน JS ต่อรูปเบามาก คอขวดจริงคือ libuv threadpool — แก้ตรงจุดด้วย UV_THREADPOOL_SIZE (หลักฐาน: RESEARCH)</td></tr>
+  <tr><td>ทำไมตั้ง UV_THREADPOOL_SIZE ที่ entry</td><td>pool ของ libuv ถูกสร้างครั้งเดียวและอ่าน env ครั้งเดียว — ต้องตั้งก่อนโหลด CLI (launcher ตั้ง env ก่อนเรียก node อีกชั้นเพื่อความชัวร์)</td></tr>
   <tr><td>ทำไม logger ไม่ append ทันที</td><td>เขียน log 4,904 ครั้ง = I/O overhead ฟรี ๆ — flush ครั้งเดียวต่อรันเร็วกว่ามาก (แลก: รันที่ถูก kill ไม่มี log แต่รูปยังครบ)</td></tr>
   <tr><td>ทำไม output เป็นโฟลเดอร์ข้างเคียง</td><td>ตัด bug คลาสสิก "สแกนเจอผลลัพธ์ตัวเอง" ตั้งแต่ต้น</td></tr>
   <tr><td>ทำไมคง ICC แต่ตัด EXIF</td><td>สีถูกต้องข้ามอุปกรณ์ + ตัดข้อมูลส่วนบุคคล (GPS/รุ่นกล้อง) เป็น default ที่ปลอดภัย</td></tr>

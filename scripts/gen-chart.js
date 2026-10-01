@@ -11,7 +11,9 @@ const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
 const xs = data.matrix.filter((r) => r.sharpConcurrency === 1);
 const xa = data.matrix.filter((r) => r.sharpConcurrency === 'auto');
 const workers = xs.map((r) => r.workers);
-const yMax = 200;
+const yMax = Math.ceil(Math.max(...data.matrix.map((r) => r.mps)) / 50) * 50;
+const satY = Math.round(Math.max(...data.matrix.map((r) => r.mps)));
+const uvt = data.uvThreadpool ?? 4;
 const px = (w) => M.left + ((workers.indexOf(w)) / (workers.length - 1)) * iw;
 const py = (v) => M.top + ih - (v / yMax) * ih;
 
@@ -22,7 +24,7 @@ function line(rows, color) {
   return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"/>${dots}`;
 }
 
-const gridY = [0, 50, 100, 150, 200];
+const gridY = [0, 50, 100, 150, 200, 250, 300, 350, 400].filter((v) => v <= yMax);
 const grid = gridY.map((v) => `
   <line x1="${M.left}" y1="${py(v)}" x2="${W - M.right}" y2="${py(v)}" stroke="#e3e8ee" stroke-width="1"/>
   <text x="${M.left - 10}" y="${py(v) + 4}" text-anchor="end" font-size="12" fill="#5b6470">${v}</text>`).join('');
@@ -30,16 +32,16 @@ const grid = gridY.map((v) => `
 const xLabels = workers.map((w) => `
   <text x="${px(w)}" y="${M.top + ih + 20}" text-anchor="middle" font-size="12" fill="#5b6470">${w}</text>`).join('');
 
-const saturationY = py(184.8);
+const saturationY = py(satY);
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI, system-ui, sans-serif">
   <rect width="${W}" height="${H}" rx="12" fill="#ffffff"/>
-  <text x="${M.left}" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — 48 real photos (14.2 MP → 3800px, q82)</text>
-  <text x="${M.left}" y="${H - 12}" font-size="11" fill="#8a94a1">Intel Core i9-9900K (16 threads) · NVMe SSD · sharp 0.35 · Node 24 · measured with npm run benchmark</text>
+  <text x="${M.left}" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — ${data.count} real photos (14.2 MP → 3800px, q82)</text>
+  <text x="${M.left}" y="${H - 12}" font-size="11" fill="#8a94a1">Intel Core i9-9900K (16 threads) · NVMe SSD · sharp 0.35 · Node 24 · libuv threadpool = ${uvt} · measured with npm run benchmark</text>
   ${grid}
   <text x="${M.left - 46}" y="${M.top + ih / 2}" font-size="12" fill="#5b6470" transform="rotate(-90 ${M.left - 46} ${M.top + ih / 2})" text-anchor="middle">MP / second</text>
   <text x="${M.left + iw / 2}" y="${M.top + ih + 40}" text-anchor="middle" font-size="12" fill="#5b6470">parallel file workers (-w)</text>
   <line x1="${M.left}" y1="${saturationY}" x2="${W - M.right}" y2="${saturationY}" stroke="#e76f51" stroke-width="1.4" stroke-dasharray="6 5"/>
-  <text x="${M.left + 8}" y="${saturationY - 7}" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ 185 MP/s (I/O + memory bandwidth)</text>
+  <text x="${M.left + 8}" y="${saturationY - 7}" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ ${satY} MP/s (libvips threads = 1, threadpool = ${uvt})</text>
   ${line(xa, '#2a9d8f')}
   ${line(xs, '#264653')}
   <g transform="translate(${W - M.right - 236}, 40)">

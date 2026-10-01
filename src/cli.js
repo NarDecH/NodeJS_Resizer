@@ -29,6 +29,7 @@ program
   .option('-w, --workers <n>', 'parallel images ("auto" = CPU core count)', 'auto')
   .option('--no-recursive', 'do not descend into subfolders')
   .option('--overwrite', 're-convert even if the output JPG already exists (default: skip = resume-safe)')
+  .option('--skip-smaller', 'leave images already within the size limit untouched (no JPG conversion for them)')
   .option('--keep-metadata', 'keep EXIF/GPS metadata (default: strip EXIF but keep the ICC colour profile)')
   .option('--mozjpeg', 'use mozjpeg encoder (~30% smaller files, ~2-3x slower)')
   .option('--dry-run', 'scan and plan only — write nothing')
@@ -76,6 +77,7 @@ async function main(cliOpts) {
     maxSize, quality, workers,
     recursive,
     overwrite: cliOpts.overwrite ?? false,
+    skipSmaller: cliOpts.skipSmaller ?? false,
     keepMetadata: cliOpts.keepMetadata ?? false,
     mozjpeg: cliOpts.mozjpeg ?? false,
     dryRun: cliOpts.dryRun ?? false,

@@ -58,6 +58,12 @@ export async function convertOne(inputFile, outputDir, cfg, relativeDir = '') {
     result.heightIn = swap ? meta.width : meta.height;
     result.bytesIn = meta.size ?? (await fsp.stat(inputFile)).size;
 
+    if (cfg.skipSmaller && Math.max(result.widthIn, result.heightIn) <= cfg.maxSize) {
+      result.status = 'skipped';
+      result.note = 'already within limit (--skip-smaller)';
+      return result;
+    }
+
     let pipeline = sharp(inputFile, {
       failOn: 'none',
       sequentialRead: true,

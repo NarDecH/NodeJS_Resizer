@@ -20,6 +20,10 @@ if not defined NODE_EXE (
   exit /b 1
 )
 
-%NODE_EXE% "%~dp0src\cli.js" %*
+rem sharp processes images on Node's libuv threadpool (default 4 threads) —
+rem raise it to the core count so batch mode can use the whole CPU
+if not defined UV_THREADPOOL_SIZE set "UV_THREADPOOL_SIZE=%NUMBER_OF_PROCESSORS%"
+
+%NODE_EXE% "%~dp0src\entry.mjs" %*
 echo.
 pause

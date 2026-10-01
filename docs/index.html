@@ -26,7 +26,7 @@
   <p>ปรับขนาดรูปภาพ<b>ทั้งโฟลเดอร์</b>เป็น JPG อย่างเดียว — กำหนดความยาวด้านที่ยาวที่สุดได้ (เริ่มต้น 3800px)
   ขับเคลื่อนด้วย sharp / libvips เร็วเต็มคอร์ CPU พร้อมไฟล์ log ละเอียดทุกรูป</p>
   <div class="badges">
-    <span class="badge">⚡ ~185 MP/s บน i9-9900K</span>
+    <span class="badge">⚡ ~260 MP/s บน i9-9900K (CPU 94%)</span>
     <span class="badge">🧾 log ละเอียดทุกไฟล์</span>
     <span class="badge">🔁 resume-safe</span>
     <span class="badge">🖼️ 11 ฟอร์แมต → JPG</span>
@@ -70,7 +70,7 @@
 <div class="grid">
   <div class="card"><h3>🎯 ยาวสุด ≤ 3800px (ปรับได้)</h3><p>รูปใหญ่ถูกย่อ, รูปเล็กไม่ถูกขยาย — ทุกรูปกลายเป็น JPG ล้วนตามตั้งค่า</p></div>
   <div class="card"><h3>🔄 หมุนตาม EXIF อัตโนมัติ</h3><p>ภาพกล้องที่เก็บแนวตั้งไว้ใน metadata จะถูกหมุนเป็นพิกเซลจริง แสดงถูกทุกโปรแกรม คงสีด้วย ICC</p></div>
-  <div class="card"><h3>🚀 เร็วเต็มเครื่อง</h3><p>ขนานที่ระดับไฟล์เท่าจำนวนคอร์ CPU + pin เธรด libvips — พิสูจน์ด้วยข้อมูลจริงใน <a href="research.html">งานวิจัย</a></p></div>
+  <div class="card"><h3>🚀 เร็วเต็มเครื่องจริง ๆ</h3><p>ขนานระดับไฟล์เท่าคอร์ CPU + ปรับ libuv threadpool (ที่ default แค่ 4 เธรด!) + pin เธรด libvips — CPU วิ่ง 94% ดู <a href="research.html">งานวิจัย</a></p></div>
   <div class="card"><h3>🧾 log ละเอียดทุกรูป</h3><p>มิติ/ขนาด ก่อน→หลัง, เวลาต่อรูป, error เต็ม ๆ — ทั้ง .log สำหรับคนและ .jsonl สำหรับเครื่อง ดู <a href="logging.html">ระบบ log</a></p></div>
   <div class="card"><h3>🔁 resume ได้ 100%</h3><p>งานค้างกลางทางรันใหม่ได้เลย ข้ามเฉพาะรูปที่เสร็จแล้ว — เขียนไฟล์แบบ atomic</p></div>
   <div class="card"><h3>🛡️ ไฟล์เสียไม่ล้มทั้งชุด</h3><p>รูพรุนกี่รูปก็ทำต่อ พร้อมบันทึกเหตุผลไว้ใน log ครบ</p></div>

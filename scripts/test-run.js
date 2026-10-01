@@ -15,10 +15,10 @@ function check(name, cond, extra = '') {
   else { failures++; console.error(`  ✘ ${name} ${extra}`); }
 }
 
-/** run the CLI; exit code 2 (some files errored) is normal for this sample set */
+/** run the CLI via the real entry point (sets UV_THREADPOOL_SIZE); exit code 2 (some files errored) is normal here */
 function runCli(args) {
   try {
-    execFileSync(process.execPath, [path.join(ROOT, 'src', 'cli.js'), ...args], { stdio: 'inherit' });
+    execFileSync(process.execPath, [path.join(ROOT, 'src', 'entry.mjs'), ...args], { stdio: 'inherit' });
   } catch (e) {
     if (e.status !== 2) throw e;
   }

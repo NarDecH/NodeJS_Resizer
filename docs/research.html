@@ -26,9 +26,9 @@
 </div>
 
 <div class="kpi">
-  <div class="card"><div class="v">185 MP/s</div><div class="l">throughput สูงสุดที่วัดได้ (I/O-bound)</div></div>
-  <div class="card"><div class="v">3.7×</div><div class="l">เร่งจาก 1 เธรด → parallel workers</div></div>
-  <div class="card"><div class="v">4–8</div><div class="l">จำนวน workers ที่เริ่มอิ่มตัว</div></div>
+  <div class="card"><div class="v">262 MP/s</div><div class="l">throughput สูงสุดที่วัดได้ (CPU 94%)</div></div>
+  <div class="card"><div class="v">5.1×</div><div class="l">เร่งจาก 1 เธรด → parallel workers</div></div>
+  <div class="card"><div class="v">+42%</div><div class="l">จากการแก้ libuv threadpool (v1.0.0 → v1.0.1)</div></div>
   <div class="card"><div class="v">−78%</div><div class="l">ขนาดรวม 233 MB → 51 MB (q82, 3800px)</div></div>
 </div>
 
@@ -43,14 +43,41 @@
 <p>ประเด็นสำคัญ: <b>งานหนักทั้งหมดเกิดในเธรด C++ ของ libvips อยู่แล้ว</b> — Node.js เป็นแค่ผู้จัดคิว
 การเร่งที่ถูกทางคือจัด concurrency ให้ถูกชั้น ไม่ใช่เพิ่ม worker_threads ของ JS</p>
 
-<h2>2 · โมเดล concurrency — คำถามวิจัยหลัก</h2>
-<p>มีเธรด 2 ชั้นที่ต้องเลือกให้ถูก: <b>ชั้นไฟล์</b> (รูปกี่ไฟล์วิ่งพร้อมกัน — ตัวแปร <code>-w</code>)
+<h2>2 · โมเดล concurrency — คำถามวิจัยหลัก (และคอขวดที่ซ่อนอยู่)</h2>
+<p>มีเธรด <b>3 ชั้น</b> ที่ต้องเลือกให้ถูก: <b>ชั้นไฟล์</b> (รูปกี่ไฟล์วิ่งพร้อมกัน — ตัวแปร <code>-w</code>),
+<b>libuv threadpool ของ Node</b> (sharp รัน pipeline บน pool นี้ — <b>default แค่ 4 เธรด</b>)
 และ<b>ชั้นภายใน libvips</b> (<code>sharp.concurrency()</code> — default ใช้คอร์ทั้งหมดต่อ operation)</p>
-<div class="callout warn"><b>กับดัก oversubscription</b>
-ถ้ารูป 8 ไฟล์วิ่งพร้อมกันโดยแต่ละไฟล์พยายามใช้ 16 เธรด = 128 เธรดแย่ง CPU 16 เธรด → context switching + cache miss
-สมมติฐานของเรา: pin libvips = 1 เธรดต่อรูป แล้วขนานที่ระดับไฟล์แทน จะเร็วกว่าและใช้แรมคาดเดาได้</div>
+<div class="callout warn"><b>คอขวดที่ซ่อนอยู่: libuv threadpool ขนาด 4</b>
+ผลวัดรอบแรกชี้เป็นเชิงเส้นถึง 4 workers (efficiency ~90%) แล้วแบนทันทีที่ ~185 MP/s ≈ 4 × 50 —
+เส้นโค้งคลาสสิกของ resource ที่จำกัด 4 พอดี ไม่ใช่พฤติกรรมของ CPU/แรม/I-O ที่อิ่มตัว
+ตัวแปร <code>UV_THREADPOOL_SIZE</code> ต้องตั้งก่อน pool ถูกสร้าง จึงแก้ที่ <code>src/entry.mjs</code> และ launcher</div>
 
-<h3>การทดลอง</h3>
+<h3>ก้าวที่ 1 — benchmark แรกพบความผิดปกติ</h3>
+<table>
+  <tr><th>workers</th><th>libvips=auto (MP/s)</th><th>libvips=1 (MP/s)</th><th>efficiency ต่อ worker</th></tr>
+  <tr><td>1</td><td>50.2</td><td>51.0</td><td>100%</td></tr>
+  <tr><td>2</td><td>92.2</td><td>99.6</td><td>~97%</td></tr>
+  <tr><td>4</td><td>165.1</td><td>179.8</td><td>~90%</td></tr>
+  <tr><td>8</td><td>184.8</td><td>182.1</td><td>~46%</td></tr>
+  <tr><td>16</td><td>181.1</td><td>184.1</td><td>~23%</td></tr>
+  <tr><td>24</td><td>186.8</td><td>174.7</td><td>~16%</td></tr>
+</table>
+
+<h3>ก้าวที่ 2 — ทดสอบยืนยันด้วย UV_THREADPOOL_SIZE (48 รูป)</h3>
+<table>
+  <tr><th>ค่าที่ตั้ง</th><th>MP/s</th><th>หมายเหตุ</th></tr>
+  <tr><td>workers=16, <b>UVT=4</b> (ค่าเริ่มต้นเดิมของ Node)</td><td>162.9–184</td><td>คอขวดที่ threadpool ขนาด 4</td></tr>
+  <tr><td>workers=8, UVT=8</td><td>229.2</td><td></td></tr>
+  <tr><td>workers=12, UVT=12</td><td>251.6</td><td></td></tr>
+  <tr><td>workers=16, UVT=16</td><td>242.1–262.0</td><td></td></tr>
+  <tr><td>workers=24, UVT=24</td><td>254.7</td><td></td></tr>
+  <tr><td>workers=16, UVT=16, libvips=auto</td><td>173.3</td><td>หลาย pipeline แย่ง vips pool เดียวกัน</td></tr>
+  <tr><td>workers=16, UVT=16, cache=off</td><td>248.7</td><td>operation cache ไม่จำเป็นกับงานผ่านครั้งเดียว</td></tr>
+</table>
+<p>และวัด <b>CPU utilization จริง</b> ระหว่างรัน 240 รูป (สุ่มค่าทุก 0.5 วินาที):
+ก่อนแก้ (UVT=4) = <b>180.6 MP/s ที่ CPU 53%</b> (พีค 76%) · หลังแก้ (UVT=16) = <b>262.1 MP/s ที่ CPU 94%</b> (พีค 100%)</p>
+
+<h3>ก้าวที่ 3 — benchmark ทางการหลังแก้ (UVT = จำนวนคอร์)</h3>
 <p>ภาพถ่ายจริงจากกล้อง <b>48 รูป</b> (JPEG 4608×3072 = 14.2 MP, รวม 679 MP / 233 MB) ·
 ย่อยาวสุด 3800px, JPEG q82 · <b>Intel i9-9900K (16 เธรด), NVMe SSD, Node 24, sharp 0.35</b> ·
 วัด 1–24 workers × libvips {auto, 1} โดยมี warm-up รอบหนึ่งให้ page cache สภาพเท่ากัน ·
@@ -58,31 +85,31 @@
 
 <figure>
   <img src="assets/concurrency-chart.svg" alt="กราฟ throughput ตามจำนวน workers">
-  <figcaption>Throughput วัดจริง — เขียว = libvips auto, เข้ม = libvips 1 เธรด (ค่า default ของเครื่องมือ)</figcaption>
+  <figcaption>Throughput วัดจริงหลังแก้ threadpool — เขียว = libvips auto, เข้ม = libvips 1 เธรด (ค่า default ของเครื่องมือ)</figcaption>
 </figure>
 
 <table>
   <tr><th>workers</th><th>libvips=auto (MP/s)</th><th>libvips=1 (MP/s)</th><th>เร็วขึ้น ×1 worker</th></tr>
-  <tr><td>1</td><td>50.2</td><td>51.0</td><td>1.0×</td></tr>
-  <tr><td>2</td><td>92.2</td><td><b>99.6</b></td><td>2.0×</td></tr>
-  <tr><td>4</td><td>165.1</td><td><b>179.8</b></td><td>3.6×</td></tr>
-  <tr><td>6</td><td>172.8</td><td><b>175.7</b></td><td>3.5×</td></tr>
-  <tr><td>8</td><td><b>184.8</b></td><td>182.1</td><td>3.7×</td></tr>
-  <tr><td>12</td><td>183.4</td><td>182.4</td><td>3.7×</td></tr>
-  <tr><td>16</td><td>181.1</td><td><b>184.1</b></td><td>3.7×</td></tr>
-  <tr><td>24</td><td><b>186.8</b></td><td>174.7</td><td>3.7×</td></tr>
+  <tr><td>1</td><td>50.3</td><td>51.0</td><td>1.0×</td></tr>
+  <tr><td>2</td><td>97.8</td><td>98.4</td><td>1.9×</td></tr>
+  <tr><td>4</td><td>174.4</td><td>174.2</td><td>3.4×</td></tr>
+  <tr><td>6</td><td>227.0</td><td>222.1</td><td>4.4×</td></tr>
+  <tr><td>8</td><td>238.4</td><td><b>257.8</b></td><td>5.1×</td></tr>
+  <tr><td>12</td><td>243.1</td><td>254.4</td><td>5.0×</td></tr>
+  <tr><td>16</td><td>261.7</td><td><b>262.0</b></td><td>5.1×</td></tr>
+  <tr><td>24</td><td>259.5</td><td>259.5</td><td>5.1×</td></tr>
 </table>
 
 <h3>สิ่งที่ข้อมูลบอก</h3>
 <div class="grid">
-  <div class="card"><h3>ขนานได้เกือบเชิงเส้นถึง 4 workers</h3><p>50 → 180 MP/s (×3.6) เพราะ decode/encode ต่อรูปเป็นงาน CPU-pure แยกกันได้ดี</p></div>
-  <div class="card"><h3>อิ่มตัวที่ ~185 MP/s ตั้งแต่ 4–8</h3><p>เพดานไม่ใช่ CPU แล้ว แต่เป็น I/O + memory bandwidth — decode 14.2 MP = raw 41 MB/รูปไหลผ่านแรม</p></div>
-  <div class="card"><h3>libvips=1 ชนะตอน worker น้อย</h3><p>w=2: +8%, w=4: +9% และเสมอกันตอนอิ่มตัว — ยืนยันสมมติฐาน oversubscription</p></div>
-  <div class="card"><h3>default ที่เลือก</h3><p>workers = จำนวนคอร์ + sharp.concurrency(1) — อยู่จุดอิ่มตัวพอดี แรมต่ำสุด ปรับตัวตามเครื่องอัตโนมัติ</p></div>
+  <div class="card"><h3>คอขวดเดิมคือ libuv threadpool</h3><p>แก้ด้วย UV_THREADPOOL_SIZE = คอร์ แล้ว 185 → 262 MP/s (+42%) และ CPU จาก 53% → 94%</p></div>
+  <div class="card"><h3>ขนานได้ดีถึง 8 workers</h3><p>51 → 258 MP/s (×5.1); หลังจากนั้นอิ่มตัวที่ ~260 จากการแชร์ SMT/core และ L2/L3</p></div>
+  <div class="card"><h3>libvips=1 จำเป็นและสำคัญขึ้น</h3><p>ปล่อย auto หลาย pipeline แย่ง vips pool เดียวกัน — วัดได้แย่กว่าถึง −30%</p></div>
+  <div class="card"><h3>default ที่เลือก</h3><p>UVT = คอร์ (ตั้งเองใน entry.mjs) + workers = คอร์ + sharp.concurrency(1) + sharp.cache(0)</p></div>
 </div>
-<div class="callout"><b>คณิตเรื่องแรม</b>
-แรมต่อรูปที่ decode แล้ว ≈ กว้าง × สูง × 3 ไบต์ — รูป 14.2 MP ≈ 41 MB → workers 16 ≈ ~660 MB (ปลอดภัย)
-แต่ workers 64 กับภาพ 50 MP = ~10 GB ทันที — จึงไม่ยอมให้ default เกินจำนวนคอร์</div>
+<div class="callout"><b>แรมที่ใช้จริง (วัด RSS)</b>
+libvips ส่ง scanline ผ่าน pipeline (streaming) ไม่เก็บภาพ raw เต็มใบต่อ pipeline —
+16 pipeline พร้อมกันกับภาพ 14.2 MP ใช้ RSS รวมเพียง <b>~80–170 MB</b> ปลอดภัยแม้เครื่องแรมน้อย</div>
 
 <h2>3 · ทางลัดจาก libvips (เปิดใช้แล้ว)</h2>
 <table>
@@ -108,15 +135,16 @@ dry-run ประเมินเวลา/พื้นที่ก่อนล�
 <h2>6 · สิ่งที่พิจารณาแล้วไม่ทำ</h2>
 <table>
   <tr><th>ทางเลือก</th><th>เหตุผล</th></tr>
-  <tr><td>Node.js worker_threads</td><td>งาน JS ต่อรูปเบามาก — IPC overhead กินเปล่า libvips ขนานเองใน C++</td></tr>
-  <tr><td>Multi-process หลาย instance</td><td>ซับซ้อน แรมซ้ำ และเพดาน I/O ทำให้ไม่ได้ผลเพิ่ม</td></tr>
+  <tr><td>Node.js worker_threads</td><td>งาน JS ต่อรูปเบามาก — คอขวดจริงคือ libuv threadpool ซึ่งแก้ตรงจุดด้วย env var แล้ว</td></tr>
+  <tr><td>Multi-process หลาย instance</td><td>ซับซ้อน แรมซ้ำ; หลังแก้ threadpool CPU วิ่ง 94% แล้ว ไม่มีที่ว่างให้ได้ผลเพิ่ม</td></tr>
   <tr><td>toBuffer() + เขียนเอง</td><td>เปลืองแรม — toFile() ของ sharp stream ลงดิสก์ตรง (ยัง atomic ผ่าน .part)</td></tr>
   <tr><td>ปรับ quality อัตโนมัติตามเนื้อหา</td><td>ต้อง encode สองรอบ ช้าลงทั้งชุด — ให้ผู้ใช้เลือก q ดีกว่า</td></tr>
-  <tr><td>libvips threads = auto</td><td>ผลวัด: ช้ากว่าตอน worker น้อย เท่ากันตอนอิ่มตัว แรมพุ่ง</td></tr>
+  <tr><td>libvips threads = auto</td><td>ผลวัด: หลาย pipeline แย่ง vips pool เดียวกัน — pin=1 เร็วกว่าถึง −30%</td></tr>
 </table>
 
 <div class="callout warn"><b>ข้อจำกัด</b>
-เพดาน ~185 MP/s วัดบน NVMe + i9-9900K — บน HDD จะติดเพดานอ่านดิสก์ก่อน (แนะนำ workers 2–4) ·
+เพดาน ~262 MP/s (CPU 94%) วัดบน NVMe + i9-9900K — บน HDD จะติดเพดานอ่านดิสก์ก่อน (แนะนำ workers 2–4) ·
+UV_THREADPOOL_SIZE ต้องตั้งก่อน pool ถูกสร้าง — เครื่องมือตั้งให้เองแล้ว แต่ถ้ารัน <code>node src/cli.js</code> ตรง ๆ อาจยังได้ default 4 (ใช้ <code>npm start</code>/resize.bat) ·
 fastShrinkOnLoad อาจให้มิติต่าง ≤1% ในรูปอัตราส่วนพิเศษ ·
 HEIC ขึ้นกับ build ของ libheif (บาง variant เข้ารหัสมีสิทธิ์อ่านไม่ได้ — จะถูกบันทึกเป็น error ต่อไฟล์) ·
 ตัวเลขทั้งหมดมาจากเครื่องเดียว ใช้เป็นแนวโน้ม — รัน <code>npm run benchmark</code> บนเครื่องตัวเองได้เลย</div>
