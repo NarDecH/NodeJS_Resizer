@@ -25,6 +25,15 @@
   <p>รูปแบบอ้างอิง Keep a Changelog · เวอร์ชันตาม SemVer</p>
 </div>
 
+<h2>v1.0.3 — 1 ตุลาคม 2026 <span class="badge">bugfix</span></h2>
+
+<h3>แก้ไข (Fixed)</h3>
+<ul>
+  <li><b>โหมด interactive (resize.bat) เด้ง <code>Error: Path not found</code> เมื่อกด Enter ผ่าน default ของ Output folder</b> — default (<code>&lt;input&gt;/&lt;size&gt;</code> เช่น <code>Photos\3800</code>) ยังไม่มีอยู่จริงจนกว่าเครื่องมือจะสร้างเอง แต่โค้ดตรวจ existence ด้วย (มีตั้งแต่ v1.0.0) — ตอนนี้ตรวจเฉพาะ input; output สร้างให้อัตโนมัติ</li>
+  <li>Ctrl+C ระหว่างคำถาม → จบอย่างสวยงาม ("Cancelled.") แทน TypeError</li>
+  <li>เพิ่ม e2e test จำลอง flow interactive (inject prompt) ครอบเคสนี้ถาวร</li>
+</ul>
+
 <h2>v1.0.2 — 1 ตุลาคม 2026 <span class="badge">performance</span></h2>
 
 <h3>เคาะ default ใหม่เพื่อความเร็วสูงสุด (Changed)</h3>

@@ -1,6 +1,6 @@
 {
   "name": "nodejs-resizer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Batch-resize every image in a folder to JPG with a fixed longest-side limit (default 3800px) — powered by sharp/libvips, with detailed file logging for analysis and debugging.",
   "type": "module",
   "main": "src/entry.mjs",

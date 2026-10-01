@@ -6,11 +6,17 @@ import fsp from 'node:fs/promises';
 import prompts from 'prompts';
 import pc from 'picocolors';
 
-async function resolveDir(input) {
-  const clean = input.trim().replace(/^["']|["']$/g, ''); // drag&drop pastes quoted paths
+async function resolvePath(input) {
+  const clean = String(input ?? '').trim().replace(/^["']|["']$/g, ''); // drag&drop pastes quoted paths
   if (!clean) return null;
   const expanded = clean.startsWith('~') ? path.join(os.homedir(), clean.slice(1)) : clean;
-  const abs = path.resolve(expanded);
+  return path.resolve(expanded);
+}
+
+/** input must exist; throws with a clear message otherwise */
+async function resolveDir(input) {
+  const abs = await resolvePath(input);
+  if (!abs) return null;
   const st = await fsp.stat(abs).catch(() => null);
   if (!st) throw new Error(`Path not found: ${abs}`);
   return abs;
@@ -18,21 +24,23 @@ async function resolveDir(input) {
 
 /**
  * Ask for the minimal set of options; everything else keeps its CLI default.
+ * `ask` is injectable so tests can simulate answers without a TTY.
  * @returns options object consumed by runResize
  */
-export async function askOptions(defaults) {
+export async function askOptions(defaults, ask = prompts) {
   console.log(pc.bold('\nImage Resizer — interactive mode'));
   console.log('Tip: you can drag & drop a folder into this window.\n');
 
-  const { inputRaw } = await prompts({
+  const { inputRaw } = await ask({
     type: 'text',
     name: 'inputRaw',
     message: 'Folder of images to convert (or a single image file)',
     validate: (v) => (v.trim() ? true : 'Please enter a folder path'),
   });
+  if (!inputRaw) throw new Error('Cancelled.');
   const input = await resolveDir(inputRaw);
 
-  const { maxSize } = await prompts({
+  const { maxSize } = await ask({
     type: 'number',
     name: 'maxSize',
     message: 'Longest side in pixels',
@@ -40,7 +48,7 @@ export async function askOptions(defaults) {
     min: 16, max: 30000,
   });
 
-  const { quality } = await prompts({
+  const { quality } = await ask({
     type: 'number',
     name: 'quality',
     message: 'JPEG quality (1-100, 82 is a good default)',
@@ -48,7 +56,7 @@ export async function askOptions(defaults) {
     min: 1, max: 100,
   });
 
-  const { recursive } = await prompts({
+  const { recursive } = await ask({
     type: 'confirm',
     name: 'recursive',
     message: 'Include subfolders?',
@@ -56,16 +64,17 @@ export async function askOptions(defaults) {
   });
 
   // default output: a subfolder inside the input named after the size (e.g. Photos\3800).
-  // The scanner always excludes the output dir, so re-running is safe.
+  // It usually does not exist yet — the tool creates it — so only the input is existence-checked.
   const inputStat = await fsp.stat(input).catch(() => null);
   const base = inputStat?.isFile() ? path.dirname(input) : input;
-  const { outputRaw } = await prompts({
+  const { outputRaw } = await ask({
     type: 'text',
     name: 'outputRaw',
     message: 'Output folder',
     initial: path.join(base, String(maxSize)),
   });
-  const output = await resolveDir(outputRaw) ?? path.resolve(outputRaw.trim().replace(/^["']|["']$/g, ''));
+  if (outputRaw === undefined) throw new Error('Cancelled.');
+  const output = (await resolvePath(outputRaw)) ?? path.join(base, String(maxSize));
 
   return { ...defaults, input, output, maxSize, quality, recursive };
 }

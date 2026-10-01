@@ -73,6 +73,23 @@ async function main() {
   const end2 = jsonl2.find((e) => e.event === 'run_end');
   check('re-run on same input skips everything', end2.stats.converted === 0, JSON.stringify(end2.stats));
 
+  console.log('run 6 — interactive flow (simulated answers, no TTY) …');
+  const { askOptions } = await import('../src/interactive.js');
+  const answers = [
+    { inputRaw: SAMPLES },   // drag&drop style input
+    { maxSize: 3800 },
+    { quality: 82 },
+    { recursive: true },
+    { outputRaw: '' },       // Enter on the default → output dir does NOT exist yet (regression case)
+  ];
+  let step = 0;
+  const asked = await askOptions({ maxSize: 3800, quality: 82, recursive: true }, () => answers[step++] ?? {});
+  check('interactive: input resolved', asked.input === path.resolve(SAMPLES), asked.input);
+  check('interactive: default output resolves to <input>/3800 although it does not exist yet',
+    asked.output === path.resolve(SAMPLES, '3800'), asked.output);
+  const cancelled = await askOptions({}, () => ({})).then(() => false, (e) => String(e.message).includes('Cancelled'));
+  check('interactive: cancel (no answer) is handled', cancelled === true);
+
   console.log('log files …');
   const logs = await fsp.readdir(path.join(OUT, '_logs'));
   check('run .log written', logs.some((f) => /^run-.*\.log$/.test(f)));

@@ -2,6 +2,18 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/th-TH/1.1.0/) · เวอร์ชันตาม [SemVer](https://semver.org/lang/th/)
 
+## [1.0.3] — 2026-10-01
+
+### แก้ไข (Fixed)
+- **โหมด interactive (ดับเบิลคลิก resize.bat) เด้ง `Error: Path not found` เมื่อกด Enter ผ่านค่า default ของ Output folder** —
+  เพราะ default (`<input>/<size>`, เช่น `Photos\3800`) ยังไม่มีอยู่จริงจนกว่าเครื่องมือจะสร้างเอง
+  แต่โค้ดไปตรวจ existence ด้วย ทำให้ใช้โหมด interactive ไม่ได้ตั้งแต่ v1.0.0
+  ตอนนี้ตรวจ existence เฉพาะ input เท่านั้น; output สร้างให้อัตโนมัติได้ตามปกติ
+- กด Ctrl+C ระหว่างคำถามแล้วเด้ง TypeError — จัดการเป็น "Cancelled." อย่างสวยงาม
+- เพิ่ม e2e test จำลอง flow interactive (inject prompt แทน TTY) ครอบเคสนี้ถาวร
+
+[1.0.3]: https://github.com/NarDecH/NodeJS_Resizer/releases/tag/v1.0.3
+
 ## [1.0.2] — 2026-10-01
 
 ### เปลี่ยน (Changed) — เคาะ default ใหม่เพื่อความเร็วสูงสุด
