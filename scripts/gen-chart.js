@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'bench', 'results.json'), 'utf8'));
 
-const W = 860, H = 440, M = { top: 46, right: 24, bottom: 56, left: 70 };
+const W = 860, H = 462, M = { top: 46, right: 24, bottom: 66, left: 70 };
 const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
 const xs = data.matrix.filter((r) => r.sharpConcurrency === 1);
 const xa = data.matrix.filter((r) => r.sharpConcurrency === 'auto');
@@ -39,7 +39,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   <text x="${M.left - 46}" y="${M.top + ih / 2}" font-size="12" fill="#5b6470" transform="rotate(-90 ${M.left - 46} ${M.top + ih / 2})" text-anchor="middle">MP / second</text>
   <text x="${M.left + iw / 2}" y="${M.top + ih + 40}" text-anchor="middle" font-size="12" fill="#5b6470">parallel file workers (-w)</text>
   <line x1="${M.left}" y1="${saturationY}" x2="${W - M.right}" y2="${saturationY}" stroke="#e76f51" stroke-width="1.4" stroke-dasharray="6 5"/>
-  <text x="${W - M.right - 6}" y="${saturationY - 7}" text-anchor="end" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ 185 MP/s (I/O + memory bandwidth)</text>
+  <text x="${M.left + 8}" y="${saturationY - 7}" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ 185 MP/s (I/O + memory bandwidth)</text>
   ${line(xa, '#2a9d8f')}
   ${line(xs, '#264653')}
   <g transform="translate(${W - M.right - 236}, 40)">
