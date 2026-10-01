@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบ log — Image Resizer</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link" href="index.html">ดาวน์โหลด</a>
+  <a class="link" href="usage.html">วิธีใช้</a>
+  <a class="link" href="research.html">งานวิจัย</a>
+  <a class="link active" href="logging.html">ระบบ log</a>
+  <a class="link" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>ระบบไฟล์ log</h1>
+  <p>ทุกการรันสร้าง log ครบชุด — ทั้งแบบมนุษย์อ่านและแบบเครื่องวิเคราะห์ เพื่อดีบักและปรับแต่งได้ลงลึกทุกไฟล์</p>
+</div>
+
+<h2>ไฟล์ที่ได้ต่อ 1 รัน (อยู่ใน <code>&lt;output&gt;/_logs/</code>)</h2>
+<table>
+  <tr><th>ไฟล์</th><th>ผู้อ่าน</th><th>เนื้อหา</th></tr>
+  <tr><td><code>run-YYYYMMDD-HHMMSS.log</code></td><td>คน</td><td>หัวรัน (เวอร์ชัน/เครื่อง/ค่า config) + ผลต่อไฟล์ละเอียด + top-5 + สรุป</td></tr>
+  <tr><td><code>run-….jsonl</code></td><td>เครื่อง</td><td>JSON Lines — 1 event ต่อบรรทัด เอาเข้า Excel/Python/jq ได้ทันที</td></tr>
+  <tr><td><code>run-….summary.json</code></td><td>คน+เครื่อง</td><td>สรุปตัวเลขทั้งรัน: นับไฟล์, throughput, ขนาด, slowest, saving สูงสุด</td></tr>
+  <tr><td><code>latest.log / latest.jsonl</code></td><td>คน</td><td>สำเนาของรันล่าสุดเสมอ — ไม่ต้องไล่ชื่อไฟล์</td></tr>
+</table>
+
+<h2>ตัวอย่างไฟล์ .log</h2>
+<pre><code>════════════════════════════════════════════════════════════════════
+  Image Resizer — run log
+════════════════════════════════════════════════════════════════════
+  Run ID      : 20261001-135627
+  Tool version: 1.0.0
+  Node.js     : v24.21.0
+  Platform    : win32 x64
+  CPU cores   : 16
+
+[t+0.237s] CONVERTED C:\Photos\DSC_0123.jpg
+          C:\Photos-resized\DSC_0123.jpg
+          dims 6000x4000 → 3800x2533 | jpeg → jpg | 8.2 MB → 2.1 MB | 231 ms
+[t+0.419s] ERROR C:\Photos\corrupt.jpg
+          dims -x- → -x- | ? → jpg | n/a → n/a | unreadable/corrupt (Input file has corrupt header)
+────────────────────────────────────────────────────────────────────
+  Files       : 11 (10 converted, 0 skipped, 1 errors)
+  Throughput  : 23.81 img/s | 261.1 MP/s
+  Size        : 1.08 MB → 486.8 KB (-618.5 KB, 56.0%)</code></pre>
+<p>ทุกบรรทัดมี: เวลาที่ผ่านมา (t+), สถานะ, พาธ input/output, มิติก่อน→หลัง (คิด EXIF rotation แล้ว),
+ฟอร์แมตต้นทาง, ขนาดก่อน→หลัง, ระยะเวลา (ms) และหมายเหตุ</p>
+
+<h2>ชนิด event ในไฟล์ .jsonl</h2>
+<table>
+  <tr><th>event</th><th>ความหมาย</th><th>ฟิลด์สำคัญ</th></tr>
+  <tr><td><code>run_start</code></td><td>เริ่มรัน + config ทั้งหมด</td><td>version, input, output, maxSize, quality, workers, recursive, overwrite, dryRun, cpus</td></tr>
+  <tr><td><code>file_converted</code></td><td>แปลงสำเร็จ</td><td>input, output, widthIn/heightIn, widthOut/heightOut, formatIn, bytesIn, bytesOut, durationMs, note</td></tr>
+  <tr><td><code>file_skipped</code></td><td>ข้าม (มีผลลัพธ์แล้ว = resume)</td><td>input, output, bytesOut, note</td></tr>
+  <tr><td><code>file_error</code></td><td>ไฟล์เสีย/อ่านไม่ได้</td><td>input, note (ข้อความ error เต็ม)</td></tr>
+  <tr><td><code>sharp_warning</code></td><td>libvips เตือน (ไฟล์เสียเล็กน้อยแต่อ่านได้)</td><td>input, message</td></tr>
+  <tr><td><code>scan_excluded_output_dir</code></td><td>ตัดโฟลเดอร์ output ออกจากการสแกน</td><td>dir</td></tr>
+  <tr><td><code>scan_done</code></td><td>สแกนจบ</td><td>files, entriesSeen</td></tr>
+  <tr><td><code>run_end</code></td><td>สรุปท้ายรัน</td><td>ตัวเลข summary ทั้งหมด</td></tr>
+</table>
+<p>ระดับ log (<code>--log-level</code>): <code>debug</code> &lt; <code>info</code> &lt; <code>warn</code> &lt; <code>error</code> — default <code>info</code></p>
+
+<h2>สูตรวิเคราะห์ที่ใช้บ่อย</h2>
+<pre><code># ไฟล์ไหน error บ้าง
+grep file_error &lt;output&gt;/_logs/latest.jsonl
+
+# 10 ไฟล์ที่ใช้เวลานานสุด (jq)
+jq -c 'select(.event=="file_converted") | {input, ms:.durationMs}' \
+  &lt;output&gt;/_logs/latest.jsonl | sort -t: -k2 -rn | head
+
+# สถิติขนาดไฟล์ผลลัพธ์ (Python)
+python -c "import json,statistics as s;rows=[json.loads(l) for l in open(r'logs/latest.jsonl',encoding='utf8')];kb=[r['bytesOut']/1024 for r in rows if r.get('event')=='file_converted'];print(len(kb),round(min(kb)),round(s.median(kb)),round(max(kb)))"</code></pre>
+
+<div class="callout"><b>ปรัชญาของระบบ log</b>
+<b>เขียนครั้งเดียวตอน flush</b> — งานหลักไม่เสีย I/O กับ log (ผลลัพธ์รูปยังปลอดภัยเพราะเขียน atomic ต่อรูป) ·
+<b>สองรูปแบบคู่กันเสมอ</b> — .log ตอบ "เกิดอะไรขึ้น" ให้คน, .jsonl ตอบ "ตัวเลขไหน" ให้เครื่อง ·
+<b>config ฝังทุกรัน</b> — เทียบข้ามรันเพื่อ tuning ได้ทันที ·
+<b>summary.json แยกไฟล์</b> — เปิดดูเร็วไม่ต้อง parse log ยาว</div>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+</main>
+</body>
+</html>

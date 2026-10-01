@@ -1,0 +1,49 @@
+{
+  "name": "nodejs-resizer",
+  "version": "1.0.0",
+  "description": "Batch-resize every image in a folder to JPG with a fixed longest-side limit (default 3800px) — powered by sharp/libvips, with detailed file logging for analysis and debugging.",
+  "type": "module",
+  "main": "src/cli.js",
+  "bin": {
+    "resizer": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "resizer": "node src/cli.js",
+    "samples": "node scripts/make-samples.js",
+    "benchmark": "node scripts/benchmark.js",
+    "chart": "node scripts/gen-chart.js",
+    "test": "node scripts/test-run.js"
+  },
+  "keywords": [
+    "image",
+    "resize",
+    "batch",
+    "sharp",
+    "libvips",
+    "jpeg",
+    "jpg",
+    "cli",
+    "windows"
+  ],
+  "author": "NarDecH",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NarDecH/NodeJS_Resizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NarDecH/NodeJS_Resizer/issues"
+  },
+  "homepage": "https://nardech.github.io/NodeJS_Resizer/",
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2",
+    "sharp": "^0.35.5"
+  }
+}

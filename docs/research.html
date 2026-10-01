@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>งานวิจัย: ทำให้เร็วที่สุด — Image Resizer</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link" href="index.html">ดาวน์โหลด</a>
+  <a class="link" href="usage.html">วิธีใช้</a>
+  <a class="link active" href="research.html">งานวิจัย</a>
+  <a class="link" href="logging.html">ระบบ log</a>
+  <a class="link" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>วิเคราะห์หาแนวทาง "ผลผลิตมากและเร็วที่สุด"</h1>
+  <p>โจทย์: ย่อรูปทั้งโฟลเดอร์ (หลักพันรูป, หลายสิบ GB) เป็น JPG ยาวสุด ≤ 3800px — เอกสารนี้สรุปทางเลือก, เหตุผลการตัดสินใจ และข้อมูลวัดจริงที่ใช้เลือกค่า default</p>
+</div>
+
+<div class="kpi">
+  <div class="card"><div class="v">185 MP/s</div><div class="l">throughput สูงสุดที่วัดได้ (I/O-bound)</div></div>
+  <div class="card"><div class="v">3.7×</div><div class="l">เร่งจาก 1 เธรด → parallel workers</div></div>
+  <div class="card"><div class="v">4–8</div><div class="l">จำนวน workers ที่เริ่มอิ่มตัว</div></div>
+  <div class="card"><div class="v">−78%</div><div class="l">ขนาดรวม 233 MB → 51 MB (q82, 3800px)</div></div>
+</div>
+
+<h2>1 · เลือกเอนจิน: sharp (libvips)</h2>
+<table>
+  <tr><th>เอนจิน</th><th>ลักษณะ</th><th>คำตัดสิน</th></tr>
+  <tr><td><b>sharp / libvips</b></td><td>C++ ในตัว, เธรดเนทีฟ, streaming pipeline</td><td><b>เลือก</b> — เร็วสุด, แรมน้อย, ติดตั้งง่าย (prebuilt binary ทุกแพลตฟอร์ม)</td></tr>
+  <tr><td>Jimp</td><td>JavaScript ล้วน</td><td>ช้ากว่า 10–50 เท่า — ใช้กับงานสิบ GB ไม่ได้</td></tr>
+  <tr><td>node-canvas</td><td>Cairo binding</td><td>ติดตั้งยากบน Windows, ไม่ได้ออกแบบสำหรับ batch</td></tr>
+  <tr><td>ImageMagick CLI</td><td>process แยกต่อรูป</td><td>overhead spawn ต่อไฟล์, คุม concurrency/log ยาก</td></tr>
+</table>
+<p>ประเด็นสำคัญ: <b>งานหนักทั้งหมดเกิดในเธรด C++ ของ libvips อยู่แล้ว</b> — Node.js เป็นแค่ผู้จัดคิว
+การเร่งที่ถูกทางคือจัด concurrency ให้ถูกชั้น ไม่ใช่เพิ่ม worker_threads ของ JS</p>
+
+<h2>2 · โมเดล concurrency — คำถามวิจัยหลัก</h2>
+<p>มีเธรด 2 ชั้นที่ต้องเลือกให้ถูก: <b>ชั้นไฟล์</b> (รูปกี่ไฟล์วิ่งพร้อมกัน — ตัวแปร <code>-w</code>)
+และ<b>ชั้นภายใน libvips</b> (<code>sharp.concurrency()</code> — default ใช้คอร์ทั้งหมดต่อ operation)</p>
+<div class="callout warn"><b>กับดัก oversubscription</b>
+ถ้ารูป 8 ไฟล์วิ่งพร้อมกันโดยแต่ละไฟล์พยายามใช้ 16 เธรด = 128 เธรดแย่ง CPU 16 เธรด → context switching + cache miss
+สมมติฐานของเรา: pin libvips = 1 เธรดต่อรูป แล้วขนานที่ระดับไฟล์แทน จะเร็วกว่าและใช้แรมคาดเดาได้</div>
+
+<h3>การทดลอง</h3>
+<p>ภาพถ่ายจริงจากกล้อง <b>48 รูป</b> (JPEG 4608×3072 = 14.2 MP, รวม 679 MP / 233 MB) ·
+ย่อยาวสุด 3800px, JPEG q82 · <b>Intel i9-9900K (16 เธรด), NVMe SSD, Node 24, sharp 0.35</b> ·
+วัด 1–24 workers × libvips {auto, 1} โดยมี warm-up รอบหนึ่งให้ page cache สภาพเท่ากัน ·
+ทำซ้ำได้ด้วย <code>npm run benchmark</code></p>
+
+<figure>
+  <img src="assets/concurrency-chart.svg" alt="กราฟ throughput ตามจำนวน workers">
+  <figcaption>Throughput วัดจริง — เขียว = libvips auto, เข้ม = libvips 1 เธรด (ค่า default ของเครื่องมือ)</figcaption>
+</figure>
+
+<table>
+  <tr><th>workers</th><th>libvips=auto (MP/s)</th><th>libvips=1 (MP/s)</th><th>เร็วขึ้น ×1 worker</th></tr>
+  <tr><td>1</td><td>50.2</td><td>51.0</td><td>1.0×</td></tr>
+  <tr><td>2</td><td>92.2</td><td><b>99.6</b></td><td>2.0×</td></tr>
+  <tr><td>4</td><td>165.1</td><td><b>179.8</b></td><td>3.6×</td></tr>
+  <tr><td>6</td><td>172.8</td><td><b>175.7</b></td><td>3.5×</td></tr>
+  <tr><td>8</td><td><b>184.8</b></td><td>182.1</td><td>3.7×</td></tr>
+  <tr><td>12</td><td>183.4</td><td>182.4</td><td>3.7×</td></tr>
+  <tr><td>16</td><td>181.1</td><td><b>184.1</b></td><td>3.7×</td></tr>
+  <tr><td>24</td><td><b>186.8</b></td><td>174.7</td><td>3.7×</td></tr>
+</table>
+
+<h3>สิ่งที่ข้อมูลบอก</h3>
+<div class="grid">
+  <div class="card"><h3>ขนานได้เกือบเชิงเส้นถึง 4 workers</h3><p>50 → 180 MP/s (×3.6) เพราะ decode/encode ต่อรูปเป็นงาน CPU-pure แยกกันได้ดี</p></div>
+  <div class="card"><h3>อิ่มตัวที่ ~185 MP/s ตั้งแต่ 4–8</h3><p>เพดานไม่ใช่ CPU แล้ว แต่เป็น I/O + memory bandwidth — decode 14.2 MP = raw 41 MB/รูปไหลผ่านแรม</p></div>
+  <div class="card"><h3>libvips=1 ชนะตอน worker น้อย</h3><p>w=2: +8%, w=4: +9% และเสมอกันตอนอิ่มตัว — ยืนยันสมมติฐาน oversubscription</p></div>
+  <div class="card"><h3>default ที่เลือก</h3><p>workers = จำนวนคอร์ + sharp.concurrency(1) — อยู่จุดอิ่มตัวพอดี แรมต่ำสุด ปรับตัวตามเครื่องอัตโนมัติ</p></div>
+</div>
+<div class="callout"><b>คณิตเรื่องแรม</b>
+แรมต่อรูปที่ decode แล้ว ≈ กว้าง × สูง × 3 ไบต์ — รูป 14.2 MP ≈ 41 MB → workers 16 ≈ ~660 MB (ปลอดภัย)
+แต่ workers 64 กับภาพ 50 MP = ~10 GB ทันที — จึงไม่ยอมให้ default เกินจำนวนคอร์</div>
+
+<h2>3 · ทางลัดจาก libvips (เปิดใช้แล้ว)</h2>
+<table>
+  <tr><th>เทคนิค</th><th>ผล</th></tr>
+  <tr><td>fastShrinkOnLoad (default)</td><td>ลดขนาดที่ DCT-domain (1/2, 1/4, 1/8) ระหว่าง decode — ย่อ 6000→3800 เร็วขึ้นมาก คุณภาพต่างเล็กน้อยแทบมองไม่เห็น</td></tr>
+  <tr><td>sequentialRead: true</td><td>อ่านไฟล์เชิงเส้น ลด random I/O ตอนไฟล์ใหญ่</td></tr>
+  <tr><td>fit=inside + withoutEnlargement</td><td>คำนวณมิติครั้งเดียว ไม่สเกลซ้ำ ไม่ขยายรูปเล็ก</td></tr>
+  <tr><td>failOn: 'none'</td><td>รูป header เน่าเล็กน้อยยังพยายามอ่าน — ไฟล์เสียไม่ทำชุดล้ม</td></tr>
+  <tr><td>atomic write (.part → rename)</td><td>ถูกขัดจังหวะกลางทางไม่มีไฟล์ครึ่ง ๆ — resume ได้จริง</td></tr>
+</table>
+
+<h2>4 · ฝั่ง encode: ทำไม q82 + progressive</h2>
+<p><b>quality 82 + chroma 4:2:0</b> คือจุดต่ำสุดของเส้น quality/size ที่ตายากเห็น artifact ในภาพถ่าย
+(แนวปฏิบัติเดียวกับเว็บส่วนใหญ่: 75–85) — ชุดทดสอบเล็กลง <b>78%</b> ที่ยาวสุด 3800px ·
+<b>progressive JPEG</b> เล็กกว่า baseline เล็กน้อยและแสดงบนเว็บรู้สึกไวขึ้น ·
+<b>mozjpeg</b> เล็กลงอีก ~25–30% แต่ช้าลง 2–3 เท่า จึงเป็น flag เสริม ไม่ใช่ default (โจทย์หลักคือเร็ว)</p>
+
+<h2>5 · ระดับชุดงาน</h2>
+<p>Resume-safe โดย default (ข้ามไฟล์ที่มีผลลัพธ์) · exclude โฟลเดอร์ output จากการสแกน ·
+sort ชื่อไฟล์ให้ log เทียบข้ามรันได้ · log รวบในหน่วยความจำแล้ว flush ครั้งเดียว (ไม่มี I/O penalty ต่อไฟล์) ·
+dry-run ประเมินเวลา/พื้นที่ก่อนลงมือ</p>
+
+<h2>6 · สิ่งที่พิจารณาแล้วไม่ทำ</h2>
+<table>
+  <tr><th>ทางเลือก</th><th>เหตุผล</th></tr>
+  <tr><td>Node.js worker_threads</td><td>งาน JS ต่อรูปเบามาก — IPC overhead กินเปล่า libvips ขนานเองใน C++</td></tr>
+  <tr><td>Multi-process หลาย instance</td><td>ซับซ้อน แรมซ้ำ และเพดาน I/O ทำให้ไม่ได้ผลเพิ่ม</td></tr>
+  <tr><td>toBuffer() + เขียนเอง</td><td>เปลืองแรม — toFile() ของ sharp stream ลงดิสก์ตรง (ยัง atomic ผ่าน .part)</td></tr>
+  <tr><td>ปรับ quality อัตโนมัติตามเนื้อหา</td><td>ต้อง encode สองรอบ ช้าลงทั้งชุด — ให้ผู้ใช้เลือก q ดีกว่า</td></tr>
+  <tr><td>libvips threads = auto</td><td>ผลวัด: ช้ากว่าตอน worker น้อย เท่ากันตอนอิ่มตัว แรมพุ่ง</td></tr>
+</table>
+
+<div class="callout warn"><b>ข้อจำกัด</b>
+เพดาน ~185 MP/s วัดบน NVMe + i9-9900K — บน HDD จะติดเพดานอ่านดิสก์ก่อน (แนะนำ workers 2–4) ·
+fastShrinkOnLoad อาจให้มิติต่าง ≤1% ในรูปอัตราส่วนพิเศษ ·
+HEIC ขึ้นกับ build ของ libheif (บาง variant เข้ารหัสมีสิทธิ์อ่านไม่ได้ — จะถูกบันทึกเป็น error ต่อไฟล์) ·
+ตัวเลขทั้งหมดมาจากเครื่องเดียว ใช้เป็นแนวโน้ม — รัน <code>npm run benchmark</code> บนเครื่องตัวเองได้เลย</div>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+</main>
+</body>
+</html>

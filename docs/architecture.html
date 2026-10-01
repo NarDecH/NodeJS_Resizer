@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สถาปัตยกรรม — Image Resizer</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link" href="index.html">ดาวน์โหลด</a>
+  <a class="link" href="usage.html">วิธีใช้</a>
+  <a class="link" href="research.html">งานวิจัย</a>
+  <a class="link" href="logging.html">ระบบ log</a>
+  <a class="link active" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>สถาปัตยกรรม</h1>
+  <p>โค้ดแบ่งเป็นโมดูลเล็ก ๆ มีหน้าที่เดียวต่อไฟล์ — Node.js จัดคิว, libvips (C++) ทำงานหนัก, logger จดทุกอย่าง</p>
+</div>
+
+<figure>
+  <img src="assets/pipeline.svg" alt="แผนภาพ pipeline: Scan → Decode → Auto-rotate → Resize → JPEG + worker pool + logger">
+  <figcaption>ท่อประมวลผลต่อรูป พร้อมชั้นคุม concurrency และชั้น log</figcaption>
+</figure>
+
+<h2>โมดูล</h2>
+<table>
+  <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+  <tr><td><code>src/cli.js</code></td><td>entry — แยก args (commander); ถ้าไม่ส่ง args เข้า interactive prompts</td></tr>
+  <tr><td><code>src/run.js</code></td><td>orchestrator — scan → sharp.concurrency() → worker pool → progress → summary → logger.flush()</td></tr>
+  <tr><td><code>src/scanner.js</code></td><td>เดินโฟลเดอร์ กรองนามสกุลรูป 13 ชนิด, exclude output dir + _logs + hidden</td></tr>
+  <tr><td><code>src/converter.js</code></td><td>pipeline ต่อรูป — metadata → rotate(EXIF) → keepIccProfile → resize(inside, withoutEnlargement) → jpeg(q, progressive) → toFile(.part) → rename</td></tr>
+  <tr><td><code>src/pool.js</code></td><td>worker pool ขนาดคงที่ (ไม่ใช้ worker_threads — libvips มีเธรด C++ ของตัวเอง)</td></tr>
+  <tr><td><code>src/logger.js</code></td><td>dual-format logger — รวมบรรทัดในหน่วยความจำ, flush ครั้งเดียวตอนจบ</td></tr>
+  <tr><td><code>src/interactive.js</code></td><td>prompts — ลากวาง path ได้, ตัด quote อัตโนมัติ, ตรวจโฟลเดอร์จริง</td></tr>
+  <tr><td><code>scripts/</code></td><td>make-samples (รูปทดสอบ), benchmark (วัด concurrency), gen-chart (กราฟ SVG), test-run (e2e)</td></tr>
+</table>
+
+<h2>การไหลของงาน</h2>
+<div class="grid">
+  <div class="card"><span class="num">1</span><h3>Scan</h3><p>รวมไฟล์รูป (recursive ตาม option) เรียงชื่อ — log เทียบข้ามรันได้</p></div>
+  <div class="card"><span class="num">2</span><h3>Plan concurrency</h3><p>workers = จำนวนคอร์, pin sharp.concurrency(1) เมื่อ workers &gt; 1 (หลักฐานใน RESEARCH)</p></div>
+  <div class="card"><span class="num">3</span><h3>Pool</h3><p>N runner หยิบไฟล์ต่อเมื่อว่าง — disk I/O กับ CPU ซ้อนกันเต็มเวลา</p></div>
+  <div class="card"><span class="num">4</span><h3>Per-file pipeline</h3><p>ไฟล์ตาย = error รายไฟล์ (failOn:none + try/catch) · เขียน .part แล้ว rename (atomic)</p></div>
+  <div class="card"><span class="num">5</span><h3>Progress + collect</h3><p>progress bar ต่อเสร็จ; เก็บมิติ/ไบต์/ms ต่อรูปเพื่อสรุป</p></div>
+  <div class="card"><span class="num">6</span><h3>Summary + flush</h3><p>console summary, top-5, เขียน .log + .jsonl + summary.json + latest.*</p></div>
+</div>
+
+<h2>การตัดสินใจเด่น</h2>
+<table>
+  <tr><th>คำถาม</th><th>คำตอบ</th></tr>
+  <tr><td>ทำไมไม่ใช้ worker_threads</td><td>งานฝั่ง JS ต่อรูปเบามาก คอขวดคือ decode/encode ใน C++ — libvips ขนานเองอยู่แล้ว (หลักฐาน: RESEARCH)</td></tr>
+  <tr><td>ทำไม logger ไม่ append ทันที</td><td>เขียน log 4,904 ครั้ง = I/O overhead ฟรี ๆ — flush ครั้งเดียวต่อรันเร็วกว่ามาก (แลก: รันที่ถูก kill ไม่มี log แต่รูปยังครบ)</td></tr>
+  <tr><td>ทำไม output เป็นโฟลเดอร์ข้างเคียง</td><td>ตัด bug คลาสสิก "สแกนเจอผลลัพธ์ตัวเอง" ตั้งแต่ต้น</td></tr>
+  <tr><td>ทำไมคง ICC แต่ตัด EXIF</td><td>สีถูกต้องข้ามอุปกรณ์ + ตัดข้อมูลส่วนบุคคล (GPS/รุ่นกล้อง) เป็น default ที่ปลอดภัย</td></tr>
+</table>
+
+<h2>Exit codes</h2>
+<table>
+  <tr><th>รหัส</th><th>ความหมาย</th></tr>
+  <tr><td><code>0</code></td><td>สำเร็จ (หรือ skipped ทั้งหมด)</td></tr>
+  <tr><td><code>1</code></td><td>ระบบล้มก่อนเริ่ม (พาธผิด, config ผิด)</td></tr>
+  <tr><td><code>2</code></td><td>จบแต่มีบางไฟล์ error (ค้น <code>file_error</code> ใน log)</td></tr>
+</table>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+</main>
+</body>
+</html>

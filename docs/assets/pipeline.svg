@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5b6470"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2a9d8f"/>
+    </marker>
+  </defs>
+  <rect width="920" height="300" rx="12" fill="#ffffff"/>
+
+  <g font-size="13" font-weight="600" text-anchor="middle">
+    <!-- 1 scan -->
+    <rect x="20" y="60" width="150" height="84" rx="10" fill="#eef4f7" stroke="#b8ccd6"/>
+    <text x="95" y="92" fill="#1d2733">1 · Scan</text>
+    <text x="95" y="112" font-size="11" font-weight="400" fill="#5b6470">เดินโฟลเดอร์ (recursive)</text>
+    <text x="95" y="128" font-size="11" font-weight="400" fill="#5b6470">กรอง 13 นามสกุลรูป</text>
+    <!-- 2 decode -->
+    <rect x="210" y="60" width="150" height="84" rx="10" fill="#eef7f3" stroke="#9fd1c5"/>
+    <text x="285" y="92" fill="#1d2733">2 · Decode</text>
+    <text x="285" y="112" font-size="11" font-weight="400" fill="#5b6470">libvips (C++) เธรดเดียว</text>
+    <text x="285" y="128" font-size="11" font-weight="400" fill="#5b6470">failOn:none — ไฟล์เสียไม่ล้ม</text>
+    <!-- 3 rotate -->
+    <rect x="400" y="60" width="150" height="84" rx="10" fill="#fdf6e8" stroke="#e5c989"/>
+    <text x="475" y="92" fill="#1d2733">3 · Auto-rotate</text>
+    <text x="475" y="112" font-size="11" font-weight="400" fill="#5b6470">ตาม EXIF orientation</text>
+    <text x="475" y="128" font-size="11" font-weight="400" fill="#5b6470">คง ICC profile</text>
+    <!-- 4 resize -->
+    <rect x="590" y="60" width="150" height="84" rx="10" fill="#eef7f3" stroke="#9fd1c5"/>
+    <text x="665" y="92" fill="#1d2733">4 · Resize</text>
+    <text x="665" y="112" font-size="11" font-weight="400" fill="#5b6470">fit inside, ≤ 3800px</text>
+    <text x="665" y="128" font-size="11" font-weight="400" fill="#5b6470">withoutEnlargement</text>
+    <!-- 5 encode -->
+    <rect x="780" y="60" width="120" height="84" rx="10" fill="#eef4f7" stroke="#b8ccd6"/>
+    <text x="840" y="92" fill="#1d2733">5 · JPEG</text>
+    <text x="840" y="112" font-size="11" font-weight="400" fill="#5b6470">progressive, q82</text>
+    <text x="840" y="128" font-size="11" font-weight="400" fill="#5b6470">เขียน .part → rename</text>
+  </g>
+
+  <g stroke="#5b6470" stroke-width="2" marker-end="url(#arr)">
+    <line x1="170" y1="102" x2="206" y2="102"/>
+    <line x1="360" y1="102" x2="396" y2="102"/>
+    <line x1="550" y1="102" x2="586" y2="102"/>
+    <line x1="740" y1="102" x2="776" y2="102"/>
+  </g>
+
+  <!-- orchestration layer -->
+  <rect x="20" y="200" width="560" height="72" rx="10" fill="#f0f7f5" stroke="#2a9d8f" stroke-width="1.6"/>
+  <text x="42" y="228" font-size="13" font-weight="600" fill="#1d6a63">Worker pool (Node.js) — รูปพร้อมกัน N ไฟล์ (default = จำนวนคอร์ CPU)</text>
+  <text x="42" y="250" font-size="11" font-weight="400" fill="#5b6470">sharp.concurrency(1) + ขนานระดับไฟล์ → throughput สูงสุด ~185 MP/s (ดู RESEARCH.md)</text>
+
+  <!-- log layer -->
+  <rect x="610" y="200" width="290" height="72" rx="10" fill="#fdf6e8" stroke="#e9c46a" stroke-width="1.6"/>
+  <text x="630" y="228" font-size="13" font-weight="600" fill="#7a5b12">Logger — ต่อ 1 run</text>
+  <text x="630" y="250" font-size="11" font-weight="400" fill="#5b6470">run-*.log (คนอ่าน) · run-*.jsonl (เครื่องอ่าน) · summary.json</text>
+
+  <g stroke="#2a9d8f" stroke-width="2" marker-end="url(#arrG)">
+    <line x1="300" y1="144" x2="300" y2="196"/>
+    <line x1="755" y1="144" x2="755" y2="196"/>
+  </g>
+</svg>

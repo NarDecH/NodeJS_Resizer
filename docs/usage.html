@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>วิธีใช้งาน — Image Resizer</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link" href="index.html">ดาวน์โหลด</a>
+  <a class="link active" href="usage.html">วิธีใช้</a>
+  <a class="link" href="research.html">งานวิจัย</a>
+  <a class="link" href="logging.html">ระบบ log</a>
+  <a class="link" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>วิธีใช้งาน</h1>
+  <p>เลือกได้ทั้งดับเบิลคลิกแบบถาม-ตอบ หรือสั่งผ่าน command line แบบเต็มรูปแบบ — ทุกโหมดเขียน log ละเอียดให้เหมือนกัน</p>
+</div>
+
+<h2>3 วิธีเริ่มใช้งาน</h2>
+<div class="grid">
+  <div class="card"><span class="num">1</span><h3>โปรแกรมสำเร็จรูป (ง่ายสุด, Windows)</h3>
+    <p>โหลด <code>…win-x64-portable.zip</code> จาก <a href="index.html">หน้าดาวน์โหลด</a> → แตก zip → ดับเบิลคลิก <b>resize.bat</b> → ลากโฟลเดอร์รูปใส่หน้าต่าง → Enter มี Node runtime + ไลบรารีครบในตัว ใช้จาก USB ก็ได้</p></div>
+  <div class="card"><span class="num">2</span><h3>ผ่าน Node.js / npm</h3>
+    <p><code>git clone</code> → <code>npm install</code> → <code>npm start</code> เข้าโหมดถาม-ตอบเหมือนดับเบิลคลิก เหมาะกับ macOS / Linux / Windows ที่มี Node อยู่แล้ว</p></div>
+  <div class="card"><span class="num">3</span><h3>สั่งงานเต็มรูปแบบ</h3>
+    <p><code>node src/cli.js -i "D:\Photos" -o "D:\Photos-resized" -s 3800 -q 82</code> — ควบคุมทุกพารามิเตอร์ ใส่สคริปต์/Task Scheduler ได้</p></div>
+</div>
+
+<h2>ตัวอย่างคำสั่งที่ใช้บ่อย</h2>
+<pre><code># ทั้งโฟลเดอร์ ยาวสุด 3800px (ค่าเริ่มต้น) ผลลัพธ์อยู่โฟลเดอร์ข้าง ๆ
+node src/cli.js -i "D:\Photos"
+
+# คุณภาพสูงขึ้น + ไฟล์เล็กลงแบบ mozjpeg (ช้าลง 2-3 เท่า)
+node src/cli.js -i "D:\Photos" -q 92 --mozjpeg
+
+# ทำภาพสำหรับเว็บ 1920px เฉพาะโฟลเดอร์เดียว
+node src/cli.js -i "D:\Gallery" -s 1920 --no-recursive
+
+# ทดลองดูก่อนโดยไม่เขียนไฟล์
+node src/cli.js -i "D:\Photos" --dry-run
+
+# รันต่อจากที่ค้าง (ข้ามไฟล์ที่เสร็จแล้วอัตโนมัติ)
+node src/cli.js -i "D:\Photos"
+
+# เก็บ EXIF/GPS ไว้ (งานถ่ายภาพที่ต้องการข้อมูลกล้อง)
+node src/cli.js -i "D:\Wedding" --keep-metadata</code></pre>
+
+<h2>ตารางตัวเลือกทั้งหมด</h2>
+<table>
+  <tr><th>ตัวเลือก</th><th>ค่าเริ่มต้น</th><th>ความหมาย</th></tr>
+  <tr><td><code>-i, --input &lt;dir&gt;</code></td><td>ถามตอนรัน</td><td>โฟลเดอร์ต้นทาง (หรือไฟล์เดียว) — ลากวางใส่หน้าต่างได้เลย</td></tr>
+  <tr><td><code>-o, --output &lt;dir&gt;</code></td><td><code>&lt;input&gt;-resized</code></td><td>โฟลเดอร์ปลายทาง; เก็บโครงสร้างโฟลเดอร์ย่อยเดิม</td></tr>
+  <tr><td><code>-s, --max-size &lt;px&gt;</code></td><td><code>3800</code></td><td>ความยาวด้านที่ยาวที่สุดที่ยอมให้มี (16–30000)</td></tr>
+  <tr><td><code>-q, --quality &lt;n&gt;</code></td><td><code>82</code></td><td>คุณภาพ JPEG 1–100</td></tr>
+  <tr><td><code>-w, --workers &lt;n&gt;</code></td><td><code>auto</code></td><td>จำนวนรูปที่ประมวลผลพร้อมกัน (auto = จำนวนคอร์ CPU)</td></tr>
+  <tr><td><code>--no-recursive</code></td><td>recursive</td><td>ไม่ลงไปในโฟลเดอร์ย่อย</td></tr>
+  <tr><td><code>--overwrite</code></td><td>ปิด</td><td>แปลงซ้ำทุกไฟล์ (default ข้ามไฟล์ที่มีผลลัพธ์แล้ว = resume)</td></tr>
+  <tr><td><code>--keep-metadata</code></td><td>ปิด</td><td>เก็บ EXIF/GPS (default ตัดทิ้ง แต่คง ICC colour profile เสมอ)</td></tr>
+  <tr><td><code>--mozjpeg</code></td><td>ปิด</td><td>ใช้ mozjpeg — เล็กลง ~30% แต่ช้าลง 2–3 เท่า</td></tr>
+  <tr><td><code>--dry-run</code></td><td>ปิด</td><td>วางแผน + log อย่างเดียว ไม่เขียนรูป</td></tr>
+  <tr><td><code>--log-level &lt;lvl&gt;</code></td><td><code>info</code></td><td>debug · info · warn · error</td></tr>
+  <tr><td><code>--log-dir &lt;dir&gt;</code></td><td><code>&lt;output&gt;/_logs</code></td><td>โฟลเดอร์เก็บไฟล์ log</td></tr>
+  <tr><td><code>--sharp-concurrency &lt;n|auto&gt;</code></td><td><code>1</code> เมื่อ workers&gt;1</td><td>จำกัดเธรดภายใน libvips (ขั้นสูง — ดู <a href="research.html">RESEARCH</a>)</td></tr>
+  <tr><td><code>--quiet</code></td><td>ปิด</td><td>ซ่อน progress bar แสดงเฉพาะ error</td></tr>
+</table>
+
+<div class="callout"><b>กติกาที่ควรรู้</b>
+ปลายทาง default คือโฟลเดอร์<b>ข้างเคียง</b> <code>&lt;input&gt;-resized</code> ไม่ใช่ใน input — รันซ้ำได้ปลอดภัยเสมอ ·
+รูปที่เล็กกว่า limit จะถูกแปลงเป็น JPG เช่นกัน (ไม่ขยายขนาด) เพื่อให้ทั้งชุดเป็น JPG ล้วน ·
+ไฟล์เสียไม่ทำทั้งชุดล้ม (exit code 2 แล้วดู log) · GIF/SVG ใช้เฟรม/หน้าแรก
+</div>
+
+<h2>เช็กลิสต์ก่อนย่อรูปชุดใหญ่</h2>
+<div class="grid">
+  <div class="card"><span class="num">1</span><h3>เผื่อพื้นที่ดิสก์</h3><p>รูป JPG 3800px เฉลี่ย ~2–6 MB/รูป ตรวจว่าดิสก์ปลายทางเหลือพอ</p></div>
+  <div class="card"><span class="num">2</span><h3>dry-run ก่อน</h3><p><code>--dry-run</code> แล้วเปิด <code>summary.json</code> ดูจำนวนไฟล์และขนาดรวม</p></div>
+  <div class="card"><span class="num">3</span><h3>ทดลองชุดเล็ก</h3><p>ย่อ 50–100 รูป ส่องคุณภาพจริงก่อนตัดสินใจค่า <code>-q</code></p></div>
+  <div class="card"><span class="num">4</span><h3>รันจริง + ตรวจ log</h3><p>เสร็จแล้วเช็ก <code>errors</code> ใน summary และค้น <code>file_error</code> ใน latest.jsonl</p></div>
+</div>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+</main>
+</body>
+</html>

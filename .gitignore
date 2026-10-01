@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# runtime bundled into portable release builds (never commit binaries)
+runtime/
+
+# logs produced by the tool itself
+logs/
+**/_logs/
+
+# outputs & local test data
+*-resized/
+*-resized-*/
+test/samples/
+test/out*/
+bench/
+tmp/
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# user's private photo library (never commit or upload)
+__Photo/

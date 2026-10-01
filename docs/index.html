@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Resizer — ย่อรูปทั้งโฟลเดอร์เป็น JPG (sharp/libvips)</title>
+<meta name="description" content="ดาวน์โหลด Image Resizer — ปรับขนาดรูปภาพทั้งโฟลเดอร์เป็น JPG ด้วย sharp/libvips กำหนดความยาวด้านสูงสุดได้ (เริ่มต้น 3800px) เร็วมาก มี log ละเอียด">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link active" href="index.html">ดาวน์โหลด</a>
+  <a class="link" href="usage.html">วิธีใช้</a>
+  <a class="link" href="research.html">งานวิจัย</a>
+  <a class="link" href="logging.html">ระบบ log</a>
+  <a class="link" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>Image Resizer</h1>
+  <p>ปรับขนาดรูปภาพ<b>ทั้งโฟลเดอร์</b>เป็น JPG อย่างเดียว — กำหนดความยาวด้านที่ยาวที่สุดได้ (เริ่มต้น 3800px)
+  ขับเคลื่อนด้วย sharp / libvips เร็วเต็มคอร์ CPU พร้อมไฟล์ log ละเอียดทุกรูป</p>
+  <div class="badges">
+    <span class="badge">⚡ ~185 MP/s บน i9-9900K</span>
+    <span class="badge">🧾 log ละเอียดทุกไฟล์</span>
+    <span class="badge">🔁 resume-safe</span>
+    <span class="badge">🖼️ 11 ฟอร์แมต → JPG</span>
+  </div>
+</div>
+
+<!-- ═══════════ LATEST RELEASE (fetched from GitHub API) ═══════════ -->
+<h2 id="download">ดาวน์โหลดเวอร์ชันล่าสุด</h2>
+<div class="card" id="release-box">
+  <div id="release-loading">⏳ กำลังดึงข้อมูล release ล่าสุดจาก GitHub …</div>
+  <div id="release-error" style="display:none">
+    ดึงข้อมูลอัตโนมัติไม่สำเร็จ (GitHub API อาจจำกัดการเรียกชั่วคราว) —
+    ดาวน์โหลดได้ที่ <a href="https://github.com/NarDecH/NodeJS_Resizer/releases/latest">หน้า Releases บน GitHub ↗</a>
+  </div>
+  <div id="release-content" style="display:none">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+      <h3 style="margin:0;font-size:26px" id="rel-title"></h3>
+      <span class="badge" id="rel-date"></span>
+    </div>
+    <p style="color:var(--muted)" id="rel-hint"></p>
+    <div id="rel-assets"></div>
+    <details>
+      <summary>รายละเอียด release (release notes)</summary>
+      <div id="rel-notes" style="font-size:14.5px;color:var(--muted)"></div>
+    </details>
+    <p style="font-size:13px;color:var(--muted);margin-top:14px">
+      รวมทุกเวอร์ชัน: <a href="https://github.com/NarDecH/NodeJS_Resizer/releases">Releases ↗</a> ·
+      ซอร์สโค้ด: <a href="https://github.com/NarDecH/NodeJS_Resizer/archive/refs/heads/main.zip">main.zip ↗</a>
+    </p>
+  </div>
+</div>
+
+<h2>เริ่มใช้ใน 3 ขั้นตอน</h2>
+<div class="grid">
+  <div class="card"><span class="num">1</span><h3>โหลดแพ็กเกจพกพา</h3><p>กดปุ่ม <b>แนะนำสำหรับ Windows</b> ด้านบน — ได้ zip ที่มีโปรแกรม + Node runtime ครบในไฟล์เดียว</p></div>
+  <div class="card"><span class="num">2</span><h3>แตก zip</h3><p>คลิกขวา → Extract All วางไว้ที่ไหนก็ได้ (โฟลเดอร์ Program Files ไม่จำเป็น)</p></div>
+  <div class="card"><span class="num">3</span><h3>ดับเบิลคลิก resize.bat</h3><p>ลากโฟลเดอร์รูปใส่หน้าต่าง → Enter → รอจบ ผลลัพธ์อยู่โฟลเดอร์ <code>&lt;input&gt;-resized</code> log อยู่ใน <code>_logs/</code></p></div>
+</div>
+
+<h2>ทำอะไรได้</h2>
+<div class="grid">
+  <div class="card"><h3>🎯 ยาวสุด ≤ 3800px (ปรับได้)</h3><p>รูปใหญ่ถูกย่อ, รูปเล็กไม่ถูกขยาย — ทุกรูปกลายเป็น JPG ล้วนตามตั้งค่า</p></div>
+  <div class="card"><h3>🔄 หมุนตาม EXIF อัตโนมัติ</h3><p>ภาพกล้องที่เก็บแนวตั้งไว้ใน metadata จะถูกหมุนเป็นพิกเซลจริง แสดงถูกทุกโปรแกรม คงสีด้วย ICC</p></div>
+  <div class="card"><h3>🚀 เร็วเต็มเครื่อง</h3><p>ขนานที่ระดับไฟล์เท่าจำนวนคอร์ CPU + pin เธรด libvips — พิสูจน์ด้วยข้อมูลจริงใน <a href="research.html">งานวิจัย</a></p></div>
+  <div class="card"><h3>🧾 log ละเอียดทุกรูป</h3><p>มิติ/ขนาด ก่อน→หลัง, เวลาต่อรูป, error เต็ม ๆ — ทั้ง .log สำหรับคนและ .jsonl สำหรับเครื่อง ดู <a href="logging.html">ระบบ log</a></p></div>
+  <div class="card"><h3>🔁 resume ได้ 100%</h3><p>งานค้างกลางทางรันใหม่ได้เลย ข้ามเฉพาะรูปที่เสร็จแล้ว — เขียนไฟล์แบบ atomic</p></div>
+  <div class="card"><h3>🛡️ ไฟล์เสียไม่ล้มทั้งชุด</h3><p>รูพรุนกี่รูปก็ทำต่อ พร้อมบันทึกเหตุผลไว้ใน log ครบ</p></div>
+</div>
+
+<figure>
+  <img src="assets/pipeline.svg" alt="pipeline ของการประมวลผล">
+  <figcaption>ท่อประมวลผล: Scan → Decode → Auto-rotate → Resize → JPEG พร้อม worker pool และ logger</figcaption>
+</figure>
+
+<p style="text-align:center;margin-top:34px">
+  <a class="btn big" href="#download">⬇ ไปที่ดาวน์โหลด</a>
+  <a class="btn ghost big" href="usage.html">อ่านคู่มือวิธีใช้</a>
+</p>
+</main>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+
+<script>
+(() => {
+  const REPO = 'NarDecH/NodeJS_Resizer';
+  const API = `https://api.github.com/repos/${REPO}/releases/latest`;
+  const CACHE_KEY = 'resizer-latest-release';
+  const CACHE_TTL = 10 * 60 * 1000; // 10 นาที
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtSize = (b) => b >= 1073741824 ? (b/1073741824).toFixed(2)+' GB' : b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB';
+  const fmtDate = (iso) => new Date(iso).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  function detectOS() {
+    const u = navigator.userAgent;
+    if (/Windows/i.test(u)) return { key: 'win', label: 'Windows' };
+    if (/Mac/i.test(u)) return { key: 'mac', label: 'macOS' };
+    if (/Linux/i.test(u) && !/Android/i.test(u)) return { key: 'linux', label: 'Linux' };
+    return { key: 'other', label: '' };
+  }
+
+  function renderNotes(md) {
+    // minimal markdown → HTML (escape first, then patterns) — ใช้กับ release notes เท่านั้น
+    return esc(md ?? '')
+      .replace(/^### (.*)$/gm, '<h4>$1</h4>')
+      .replace(/^## (.*)$/gm, '<h4>$1</h4>')
+      .replace(/^\s*[-*] (.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
+      .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/^(?!<[uhlc])((?!<)[^\n]+)\n/gm, '$1<br>')
+      .replace(/<\/ul>\s*<ul>/g, '');
+  }
+
+  function show(release) {
+    $('release-loading').style.display = 'none';
+    $('release-content').style.display = 'block';
+    $('rel-title').textContent = release.name || release.tag_name || 'Latest release';
+    $('rel-date').textContent = '📅 ' + fmtDate(release.published_at);
+    const os = detectOS();
+    const portable = (release.assets ?? []).find((a) => /win-x64-portable/i.test(a.name));
+    $('rel-hint').textContent = portable && os.key === 'win'
+      ? `ตรวจพบว่าคุณใช้ ${os.label} — แพ็กเกจพกพาคือตัวที่แนะนำ (ไม่ต้องติดตั้งอะไรเพิ่ม)`
+      : `แพ็กเกจพกพาสำหรับ Windows; ผู้ใช้ macOS/Linux ใช้ไฟล์ Source code + npm install`;
+
+    $('rel-assets').innerHTML = (release.assets ?? []).map((a) => {
+      const isPortable = /win-x64-portable/i.test(a.name);
+      const isSrc = /^Source code/i.test(a.name);
+      const main = isPortable && os.key === 'win';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <b>${esc(a.name)}</b>
+          ${main ? '<span class="badge" style="background:#eff8f6;color:var(--teal-dark);border-color:#bfe3dd">แนะนำสำหรับคุณ</span>' : ''}
+          <div style="font-size:12.5px;color:var(--muted)">${fmtSize(a.size)} · ดาวน์โหลด ${a.download_count.toLocaleString('th-TH')} ครั้ง</div>
+        </div>
+        ${isSrc ? '' : `<a class="btn ${main ? '' : 'ghost'}" href="${esc(a.browser_download_url)}">⬇ ดาวน์โหลด</a>`}
+      </div>`;
+    }).join('') || '<p>ยังไม่มีไฟล์แนบใน release นี้</p>';
+
+    $('rel-notes').innerHTML = renderNotes(release.body);
+  }
+
+  function fail() {
+    $('release-loading').style.display = 'none';
+    $('release-error').style.display = 'block';
+  }
+
+  const cached = (() => { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch { return null; } })();
+  if (cached && Date.now() - cached.at < CACHE_TTL) {
+    show(cached.release);
+  }
+  fetch(API, { headers: { Accept: 'application/vnd.github+json' } })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then((release) => {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), release })); } catch {}
+      show(release);
+    })
+    .catch(() => { if (!cached) fail(); });
+})();
+</script>
+</body>
+</html>

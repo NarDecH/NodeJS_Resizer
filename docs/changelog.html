@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog — Image Resizer</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="logo"></span>Image Resizer</a>
+  <a class="link" href="index.html">ดาวน์โหลด</a>
+  <a class="link" href="usage.html">วิธีใช้</a>
+  <a class="link" href="research.html">งานวิจัย</a>
+  <a class="link" href="logging.html">ระบบ log</a>
+  <a class="link" href="architecture.html">สถาปัตยกรรม</a>
+  <a class="link active" href="changelog.html">Changelog</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/NarDecH/NodeJS_Resizer">GitHub ↗</a>
+</div></nav>
+
+<main>
+<div class="hero">
+  <h1>Changelog</h1>
+  <p>รูปแบบอ้างอิง Keep a Changelog · เวอร์ชันตาม SemVer</p>
+</div>
+
+<h2>v1.0.0 — 1 ตุลาคม 2026 <span class="badge">release</span></h2>
+
+<h3>เพิ่มใหม่ (Added)</h3>
+<ul>
+  <li>CLI ย่อรูปทั้งโฟลเดอร์เป็น JPG: กำหนดความยาวด้านสูงสุดได้ (default <b>3800px</b>), คุณภาพ JPEG, recursive, resume-safe</li>
+  <li>แปลงข้ามฟอร์แมต: jpg / jpeg / jfif / png / webp / tiff / gif / svg / avif / heic / heif → <code>.jpg</code></li>
+  <li>Auto-rotate ตาม EXIF orientation + คง ICC colour profile (ตัด EXIF/GPS ตาม default, เปิด <code>--keep-metadata</code> เพื่อเก็บ)</li>
+  <li>ระบบ log ครบต่อรัน: <code>.log</code> (คนอ่าน) + <code>.jsonl</code> (เครื่องอ่าน) + <code>summary.json</code> + <code>latest.*</code></li>
+  <li>โหมดใช้งาน: interactive (ดับเบิลคลิก <code>resize.bat</code> / <code>npm start</code>), CLI เต็มรูปแบบ, <code>--dry-run</code></li>
+  <li>Concurrency อัตโนมัติ: workers = จำนวนคอร์ + <code>sharp.concurrency(1)</code> — พิสูจน์ด้วย benchmark (ดู RESEARCH)</li>
+  <li>Atomic write (<code>.part</code> → rename): ขัดจังหวะกลางทางได้ ไม่มีไฟล์ครึ่งกลาง</li>
+  <li>Flags: <code>--mozjpeg</code>, <code>--overwrite</code>, <code>--quiet</code>, <code>--log-level</code>, <code>--log-dir</code>, <code>--sharp-concurrency</code></li>
+  <li>เอกสารครบ md + HTML: README, USAGE, RESEARCH (กราฟจากข้อมูลจริง), LOGGING, ARCHITECTURE, CHANGELOG</li>
+  <li>GitHub Pages: หน้าดาวน์โหลดดึง release ล่าสุดจาก GitHub API อัตโนมัติ</li>
+  <li>Release assets: แพ็กเกจพกพา Windows x64 (Node runtime + node_modules ในตัว) + ซอร์สโค้ด zip + SHA256SUMS</li>
+</ul>
+
+<h3>ประสิทธิภาพ (i9-9900K, ภาพ 14.2 MP → 3800px, q82)</h3>
+<ul>
+  <li>~185 MP/s (~11.5 รูป/วินาที) ที่ workers 4–8+; เร่งจากเธรดเดียว 3.7 เท่า</li>
+  <li>ขนาดรวมลดลง 78% (233 MB → 51 MB) ในชุดทดสอบ 48 รูป</li>
+</ul>
+
+<footer>© 2026 NarDecH · MIT License · ขับเคลื่อนด้วย sharp / libvips · <a href="https://github.com/NarDecH/NodeJS_Resizer">GitHub</a></footer>
+</main>
+</body>
+</html>
