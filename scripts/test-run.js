@@ -27,6 +27,7 @@ function runCli(args) {
 async function main() {
   console.log('building sample set …');
   execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'make-samples.js'), SAMPLES], { stdio: 'inherit' });
+  await fsp.rm(path.join(SAMPLES, '3800'), { recursive: true, force: true });
 
   console.log('run 1 — full conversion …');
   runCli(['-i', SAMPLES, '-o', OUT, '-s', '3800', '-q', '82', '--quiet']);
@@ -57,6 +58,20 @@ async function main() {
   runCli(['-i', SAMPLES, '-o', DRY, '--dry-run', '--quiet']);
   const dryFiles = (await fsp.readdir(DRY)).filter((f) => f.endsWith('.jpg'));
   check('dry-run: zero images written', dryFiles.length === 0, dryFiles.join(','));
+
+  console.log('run 4 — default output = <input>/<size> (inside the input folder) …');
+  runCli(['-i', SAMPLES, '--quiet']);
+  check('output lands in <input>/3800', (await fsp.stat(path.join(SAMPLES, '3800', 'big-photo.jpg'))).isFile());
+  check('subfolder mirrored into <input>/3800', (await fsp.stat(path.join(SAMPLES, '3800', 'sub', 'nested-folder.jpg'))).isFile());
+  check('logs written to <input>/3800/_logs', (await fsp.stat(path.join(SAMPLES, '3800', '_logs', 'latest.log'))).isFile());
+
+  console.log('run 5 — same input again (scanner must exclude the output dir) …');
+  runCli(['-i', SAMPLES, '--quiet']);
+  const nested = await fsp.stat(path.join(SAMPLES, '3800', '3800')).then(() => true, () => false);
+  check('no nested 3800/3800 output', !nested);
+  const jsonl2 = (await fsp.readFile(path.join(SAMPLES, '3800', '_logs', 'latest.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+  const end2 = jsonl2.find((e) => e.event === 'run_end');
+  check('re-run on same input skips everything', end2.stats.converted === 0, JSON.stringify(end2.stats));
 
   console.log('log files …');
   const logs = await fsp.readdir(path.join(OUT, '_logs'));

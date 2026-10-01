@@ -31,6 +31,8 @@ export async function runResize(opts, appMeta) {
     overwrite: opts.overwrite,
     keepMetadata: opts.keepMetadata,
     mozjpeg: opts.mozjpeg,
+    progressive: opts.progressive,
+    kernel: opts.kernel,
     dryRun: opts.dryRun,
   });
   await logger.init();
@@ -104,6 +106,8 @@ export async function runResize(opts, appMeta) {
       keepMetadata: opts.keepMetadata,
       overwrite: opts.overwrite,
       skipSmaller: opts.skipSmaller,
+      progressive: opts.progressive,
+      kernel: opts.kernel,
       logger,
     }, relDir === '.' ? '' : relDir);
   }, (r) => {

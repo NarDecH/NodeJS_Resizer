@@ -35,7 +35,7 @@ const xLabels = workers.map((w) => `
 const saturationY = py(satY);
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI, system-ui, sans-serif">
   <rect width="${W}" height="${H}" rx="12" fill="#ffffff"/>
-  <text x="${M.left}" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — ${data.count} real photos (14.2 MP → 3800px, q82)</text>
+  <text x="${M.left}" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — ${data.count} real photos (14.2 MP → 3800px, q82${data.kernel ? `, ${data.kernel} kernel` : ''}${data.progressive === false ? ', baseline JPEG' : ''})</text>
   <text x="${M.left}" y="${H - 12}" font-size="11" fill="#8a94a1">Intel Core i9-9900K (16 threads) · NVMe SSD · sharp 0.35 · Node 24 · libuv threadpool = ${uvt} · measured with npm run benchmark</text>
   ${grid}
   <text x="${M.left - 46}" y="${M.top + ih / 2}" font-size="12" fill="#5b6470" transform="rotate(-90 ${M.left - 46} ${M.top + ih / 2})" text-anchor="middle">MP / second</text>

@@ -4,6 +4,7 @@
 //   resizer (no arguments)            interactive mode
 import path from 'node:path';
 import os from 'node:os';
+import fsp from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
@@ -23,7 +24,7 @@ program
   .description('Batch-resize every image in a folder to JPG (longest side limited, default 3800px).')
   .version(APP.version, '-V, --version')
   .option('-i, --input <dir>', 'folder (or single file) containing images')
-  .option('-o, --output <dir>', 'output folder (default: "<input>-resized" next to the input)')
+  .option('-o, --output <dir>', 'output folder (default: "<input>/<max-size>" inside the input, e.g. Photos\\3800)')
   .option('-s, --max-size <px>', 'longest side limit in pixels', '3800')
   .option('-q, --quality <n>', 'JPEG quality 1-100', '82')
   .option('-w, --workers <n>', 'parallel images ("auto" = CPU core count)', 'auto')
@@ -31,6 +32,8 @@ program
   .option('--overwrite', 're-convert even if the output JPG already exists (default: skip = resume-safe)')
   .option('--skip-smaller', 'leave images already within the size limit untouched (no JPG conversion for them)')
   .option('--keep-metadata', 'keep EXIF/GPS metadata (default: strip EXIF but keep the ICC colour profile)')
+  .option('--progressive', 'write progressive JPEGs (default: baseline — ~33% faster encode, ~3% larger files)')
+  .option('--kernel <name>', 'resize kernel: cubic (default, fastest) | lanczos3 (sharpest) | lanczos2 | mks13', 'cubic')
   .option('--mozjpeg', 'use mozjpeg encoder (~30% smaller files, ~2-3x slower)')
   .option('--dry-run', 'scan and plan only — write nothing')
   .option('--log-level <level>', 'debug | info | warn | error', 'info')
@@ -68,8 +71,17 @@ async function main(cliOpts) {
     recursive = asked.recursive;
   }
   input = path.resolve(input.trim().replace(/^["']|["']$/g, ''));
-  output = path.resolve((output ?? `${input}-resized`).trim().replace(/^["']|["']$/g, ''));
+  // default output: inside the input folder, named after the size limit (e.g. Photos\3800).
+  // The scanner always excludes the output dir, so re-runs stay safe.
+  if (output) output = path.resolve(output.trim().replace(/^["']|["']$/g, ''));
+  else {
+    const inputStat = await fsp.stat(input).catch(() => null);
+    const base = inputStat?.isFile() ? path.dirname(input) : input;
+    output = path.join(base, String(maxSize));
+  }
   if (input === output) throw new Error('Output folder must be different from the input folder.');
+
+  const kernel = ['nearest', 'cubic', 'lanczos2', 'lanczos3', 'mks13'].includes(cliOpts.kernel) ? cliOpts.kernel : 'cubic';
 
   const opts = {
     input,
@@ -78,6 +90,8 @@ async function main(cliOpts) {
     recursive,
     overwrite: cliOpts.overwrite ?? false,
     skipSmaller: cliOpts.skipSmaller ?? false,
+    progressive: cliOpts.progressive ?? false,
+    kernel,
     keepMetadata: cliOpts.keepMetadata ?? false,
     mozjpeg: cliOpts.mozjpeg ?? false,
     dryRun: cliOpts.dryRun ?? false,

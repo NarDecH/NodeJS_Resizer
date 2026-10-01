@@ -55,14 +55,15 @@ export async function askOptions(defaults) {
     initial: defaults.recursive,
   });
 
-  // default output: sibling folder "<input>-resized" — never inside the input folder,
-  // so re-running the tool on the same input can't re-process its own results
-  const outputBase = input.endsWith(path.sep) ? input.slice(0, -1) : input;
+  // default output: a subfolder inside the input named after the size (e.g. Photos\3800).
+  // The scanner always excludes the output dir, so re-running is safe.
+  const inputStat = await fsp.stat(input).catch(() => null);
+  const base = inputStat?.isFile() ? path.dirname(input) : input;
   const { outputRaw } = await prompts({
     type: 'text',
     name: 'outputRaw',
     message: 'Output folder',
-    initial: `${outputBase}-resized`,
+    initial: path.join(base, String(maxSize)),
   });
   const output = await resolveDir(outputRaw) ?? path.resolve(outputRaw.trim().replace(/^["']|["']$/g, ''));
 

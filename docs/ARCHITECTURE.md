@@ -13,7 +13,7 @@ src/cli.js          entry — แยก args (commander) → ถ้าไม่�
 src/run.js          orchestrator — scan → sharp.concurrency() → worker pool → progress bar → summary → logger.flush()
 src/scanner.js      เดินโฟลเดอร์ (fs.promises) กรองนามสกุล 13 ชนิด, exclude output dir + _logs + hidden
 src/converter.js    pipeline ต่อรูป — metadata → rotate(EXIF) → [keepIccProfile|keepMetadata]
-                    → resize(inside, withoutEnlargement) → jpeg(q, progressive) → toFile(.part) → rename
+                    → resize(inside, withoutEnlargement, kernel) → jpeg(q, baseline) → toFile(.part) → rename
 src/pool.js         worker pool ขนาดคงที่ — Promise.all ของ N runner แยกไฟล์กัน (ไม่ใช้ worker_threads)
 src/logger.js       dual-format logger — เก็บบรรทัดในหน่วยความจำ, flush ครั้งเดียวตอนจบ (.log + .jsonl + summary.json + latest.*)
 src/interactive.js  prompts (ลากวาง path ได้, ตัด " อัตโนมัติ, ตรวจว่าโฟลเดอร์มีจริง)
@@ -34,7 +34,7 @@ scripts/            make-samples (รูปทดสอบ), benchmark (วั�
 
 - **ทำไมไม่ใช้ worker_threads** — งานฝั่ง JS ต่อรูปเบามาก คอขวดคือ libuv threadpool ซึ่งแก้ตรงจุดด้วย `UV_THREADPOOL_SIZE` (หลักฐาน: RESEARCH.md)
 - **ทำไม logger ไม่ append ทันที** — เขียน log 4,904 ครั้ง = I/O overhead ฟรี ๆ; รวมเป็น write ครั้งเดียว (หรือสอง) ต่อรันเร็วกว่ามาก โดยเสียแค่ log ของรันที่ถูก kill กลางทาง (ยอม)
-- **ทำไม output เป็นโฟลเดอร์ข้างเคียง** — ตัด bug คลาสสิก "สแกนเจอผลลัพธ์ตัวเอง" ตั้งแต่ต้น
+- **ทำไม output อยู่ใน input ชื่อตามขนาด (`<input>/<size>`)** — ตามที่ผู้ใช้ต้องการ (จัดโฟลเดอร์ง่าย ดูแลต่อง่าย); ความปลอดภัยมาจาก scanner ที่ exclude output dir เสมอ + มี e2e test กันการ nesting (รันซ้ำไม่เกิด `3800/3800`)
 - **ทำไมคง ICC แต่ตัด EXIF** — สีถูกต้องเมื่อดูข้ามอุปกรณ์ พร้อมตัดข้อมูลส่วนบุคคล (GPS/รุ่นกล้อง) ตาม default ที่ปลอดภัย
 - **ทำไมตั้ง UV_THREADPOOL_SIZE ที่ entry** — threadpool ของ libuv (ที่ sharp ใช้) ถูกสร้างครั้งเดียวตอนใช้ครั้งแรก และอ่าน env ครั้งเดียวตอนนั้น — จึงต้องตั้งก่อนโหลด CLI (และ launcher ตั้ง env ก่อนเรียก node อีกชั้นเพื่อความชัวร์)
 

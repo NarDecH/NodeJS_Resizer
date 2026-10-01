@@ -1,28 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="860" height="462" viewBox="0 0 860 462" font-family="Segoe UI, system-ui, sans-serif">
   <rect width="860" height="462" rx="12" fill="#ffffff"/>
-  <text x="70" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — 48 real photos (14.2 MP → 3800px, q82)</text>
+  <text x="70" y="26" font-size="17" font-weight="600" fill="#1d2733">Throughput vs. file-level workers — 48 real photos (14.2 MP → 3800px, q82, cubic kernel, baseline JPEG)</text>
   <text x="70" y="450" font-size="11" fill="#8a94a1">Intel Core i9-9900K (16 threads) · NVMe SSD · sharp 0.35 · Node 24 · libuv threadpool = 16 · measured with npm run benchmark</text>
   
   <line x1="70" y1="396" x2="836" y2="396" stroke="#e3e8ee" stroke-width="1"/>
   <text x="60" y="400" text-anchor="end" font-size="12" fill="#5b6470">0</text>
-  <line x1="70" y1="337.6666666666667" x2="836" y2="337.6666666666667" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="341.6666666666667" text-anchor="end" font-size="12" fill="#5b6470">50</text>
-  <line x1="70" y1="279.33333333333337" x2="836" y2="279.33333333333337" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="283.33333333333337" text-anchor="end" font-size="12" fill="#5b6470">100</text>
-  <line x1="70" y1="221" x2="836" y2="221" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="225" text-anchor="end" font-size="12" fill="#5b6470">150</text>
-  <line x1="70" y1="162.66666666666669" x2="836" y2="162.66666666666669" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="166.66666666666669" text-anchor="end" font-size="12" fill="#5b6470">200</text>
-  <line x1="70" y1="104.33333333333331" x2="836" y2="104.33333333333331" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="108.33333333333331" text-anchor="end" font-size="12" fill="#5b6470">250</text>
+  <line x1="70" y1="346" x2="836" y2="346" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="350" text-anchor="end" font-size="12" fill="#5b6470">50</text>
+  <line x1="70" y1="296" x2="836" y2="296" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="300" text-anchor="end" font-size="12" fill="#5b6470">100</text>
+  <line x1="70" y1="246" x2="836" y2="246" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="250" text-anchor="end" font-size="12" fill="#5b6470">150</text>
+  <line x1="70" y1="196" x2="836" y2="196" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="200" text-anchor="end" font-size="12" fill="#5b6470">200</text>
+  <line x1="70" y1="146" x2="836" y2="146" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="150" text-anchor="end" font-size="12" fill="#5b6470">250</text>
+  <line x1="70" y1="96" x2="836" y2="96" stroke="#e3e8ee" stroke-width="1"/>
+  <text x="60" y="100" text-anchor="end" font-size="12" fill="#5b6470">300</text>
   <line x1="70" y1="46" x2="836" y2="46" stroke="#e3e8ee" stroke-width="1"/>
-  <text x="60" y="50" text-anchor="end" font-size="12" fill="#5b6470">300</text>
+  <text x="60" y="50" text-anchor="end" font-size="12" fill="#5b6470">350</text>
   <text x="24" y="221" font-size="12" fill="#5b6470" transform="rotate(-90 24 221)" text-anchor="middle">MP / second</text>
   <text x="453" y="436" text-anchor="middle" font-size="12" fill="#5b6470">parallel file workers (-w)</text>
-  <line x1="70" y1="90.33333333333337" x2="836" y2="90.33333333333337" stroke="#e76f51" stroke-width="1.4" stroke-dasharray="6 5"/>
-  <text x="78" y="83.33333333333337" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ 262 MP/s (libvips threads = 1, threadpool = 16)</text>
-  <polyline points="70.0,337.3 179.4,281.9 288.9,192.5 398.3,131.2 507.7,117.9 617.1,112.4 726.6,90.7 836.0,93.2" fill="none" stroke="#2a9d8f" stroke-width="2.5"/><circle cx="70.0" cy="337.3" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>1 workers → 50.3 MP/s</title></circle><circle cx="179.4" cy="281.9" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>2 workers → 97.8 MP/s</title></circle><circle cx="288.9" cy="192.5" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>4 workers → 174.4 MP/s</title></circle><circle cx="398.3" cy="131.2" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>6 workers → 227.0 MP/s</title></circle><circle cx="507.7" cy="117.9" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>8 workers → 238.4 MP/s</title></circle><circle cx="617.1" cy="112.4" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>12 workers → 243.1 MP/s</title></circle><circle cx="726.6" cy="90.7" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>16 workers → 261.7 MP/s</title></circle><circle cx="836.0" cy="93.2" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>24 workers → 259.5 MP/s</title></circle>
-  <polyline points="70.0,336.4 179.4,281.2 288.9,192.8 398.3,136.9 507.7,95.2 617.1,99.2 726.6,90.3 836.0,93.3" fill="none" stroke="#264653" stroke-width="2.5"/><circle cx="70.0" cy="336.4" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>1 workers → 51.0 MP/s</title></circle><circle cx="179.4" cy="281.2" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>2 workers → 98.4 MP/s</title></circle><circle cx="288.9" cy="192.8" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>4 workers → 174.2 MP/s</title></circle><circle cx="398.3" cy="136.9" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>6 workers → 222.1 MP/s</title></circle><circle cx="507.7" cy="95.2" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>8 workers → 257.8 MP/s</title></circle><circle cx="617.1" cy="99.2" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>12 workers → 254.4 MP/s</title></circle><circle cx="726.6" cy="90.3" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>16 workers → 262.0 MP/s</title></circle><circle cx="836.0" cy="93.3" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>24 workers → 259.5 MP/s</title></circle>
+  <line x1="70" y1="57" x2="836" y2="57" stroke="#e76f51" stroke-width="1.4" stroke-dasharray="6 5"/>
+  <text x="78" y="50" font-size="12" fill="#e76f51" font-weight="600">saturates ≈ 339 MP/s (libvips threads = 1, threadpool = 16)</text>
+  <polyline points="70.0,319.0 179.4,247.7 288.9,141.4 398.3,76.2 507.7,57.1 617.1,86.2 726.6,94.3 836.0,84.3" fill="none" stroke="#2a9d8f" stroke-width="2.5"/><circle cx="70.0" cy="319.0" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>1 workers → 77.0 MP/s</title></circle><circle cx="179.4" cy="247.7" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>2 workers → 148.3 MP/s</title></circle><circle cx="288.9" cy="141.4" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>4 workers → 254.6 MP/s</title></circle><circle cx="398.3" cy="76.2" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>6 workers → 319.8 MP/s</title></circle><circle cx="507.7" cy="57.1" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>8 workers → 338.9 MP/s</title></circle><circle cx="617.1" cy="86.2" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>12 workers → 309.8 MP/s</title></circle><circle cx="726.6" cy="94.3" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>16 workers → 301.7 MP/s</title></circle><circle cx="836.0" cy="84.3" r="4" fill="#2a9d8f" stroke="#fff" stroke-width="1.5"><title>24 workers → 311.7 MP/s</title></circle>
+  <polyline points="70.0,317.0 179.4,247.9 288.9,136.8 398.3,67.6 507.7,79.4 617.1,75.6 726.6,67.3 836.0,70.8" fill="none" stroke="#264653" stroke-width="2.5"/><circle cx="70.0" cy="317.0" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>1 workers → 79.0 MP/s</title></circle><circle cx="179.4" cy="247.9" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>2 workers → 148.1 MP/s</title></circle><circle cx="288.9" cy="136.8" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>4 workers → 259.2 MP/s</title></circle><circle cx="398.3" cy="67.6" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>6 workers → 328.4 MP/s</title></circle><circle cx="507.7" cy="79.4" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>8 workers → 316.6 MP/s</title></circle><circle cx="617.1" cy="75.6" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>12 workers → 320.4 MP/s</title></circle><circle cx="726.6" cy="67.3" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>16 workers → 328.7 MP/s</title></circle><circle cx="836.0" cy="70.8" r="4" fill="#264653" stroke="#fff" stroke-width="1.5"><title>24 workers → 325.2 MP/s</title></circle>
   <g transform="translate(600, 40)">
     <rect width="228" height="40" rx="8" fill="#f5f7fa" stroke="#e3e8ee"/>
     <line x1="14" y1="15" x2="42" y2="15" stroke="#2a9d8f" stroke-width="2.5"/><circle cx="28" cy="15" r="4" fill="#2a9d8f"/>

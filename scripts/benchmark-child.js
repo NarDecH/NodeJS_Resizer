@@ -15,6 +15,7 @@ const opts = {
   input: src, output: outDir,
   maxSize: 3800, quality: 82, recursive: false, overwrite: true,
   keepMetadata: false, mozjpeg: false, dryRun: false,
+  progressive: false, kernel: 'cubic', // v1.0.2 defaults
   logLevel: 'error', quiet: true, logDir,
 };
 
@@ -42,6 +43,8 @@ async function main() {
     cpu: os.cpus()[0].model,
     cores: os.cpus().length,
     uvThreadpool: Number(process.env.UV_THREADPOOL_SIZE ?? 4),
+    kernel: 'cubic',
+    progressive: false,
     matrix,
   };
   await fsp.writeFile(path.join(ROOT, 'bench', 'results.json'), JSON.stringify(results, null, 2));

@@ -37,7 +37,7 @@
   <tr><td><code>src/cli.js</code></td><td>entry — แยก args (commander); ถ้าไม่ส่ง args เข้า interactive prompts</td></tr>
   <tr><td><code>src/run.js</code></td><td>orchestrator — scan → sharp.concurrency() → worker pool → progress → summary → logger.flush()</td></tr>
   <tr><td><code>src/scanner.js</code></td><td>เดินโฟลเดอร์ กรองนามสกุลรูป 13 ชนิด, exclude output dir + _logs + hidden</td></tr>
-  <tr><td><code>src/converter.js</code></td><td>pipeline ต่อรูป — metadata → rotate(EXIF) → keepIccProfile → resize(inside, withoutEnlargement) → jpeg(q, progressive) → toFile(.part) → rename</td></tr>
+  <tr><td><code>src/converter.js</code></td><td>pipeline ต่อรูป — metadata → rotate(EXIF) → keepIccProfile → resize(inside, withoutEnlargement, kernel cubic) → jpeg(q, baseline) → toFile(.part) → rename</td></tr>
   <tr><td><code>src/pool.js</code></td><td>worker pool ขนาดคงที่ (ไม่ใช้ worker_threads — libvips มีเธรด C++ ของตัวเอง)</td></tr>
   <tr><td><code>src/logger.js</code></td><td>dual-format logger — รวมบรรทัดในหน่วยความจำ, flush ครั้งเดียวตอนจบ</td></tr>
   <tr><td><code>src/interactive.js</code></td><td>prompts — ลากวาง path ได้, ตัด quote อัตโนมัติ, ตรวจโฟลเดอร์จริง</td></tr>
@@ -60,7 +60,7 @@
   <tr><td>ทำไมไม่ใช้ worker_threads</td><td>งาน JS ต่อรูปเบามาก คอขวดจริงคือ libuv threadpool — แก้ตรงจุดด้วย UV_THREADPOOL_SIZE (หลักฐาน: RESEARCH)</td></tr>
   <tr><td>ทำไมตั้ง UV_THREADPOOL_SIZE ที่ entry</td><td>pool ของ libuv ถูกสร้างครั้งเดียวและอ่าน env ครั้งเดียว — ต้องตั้งก่อนโหลด CLI (launcher ตั้ง env ก่อนเรียก node อีกชั้นเพื่อความชัวร์)</td></tr>
   <tr><td>ทำไม logger ไม่ append ทันที</td><td>เขียน log 4,904 ครั้ง = I/O overhead ฟรี ๆ — flush ครั้งเดียวต่อรันเร็วกว่ามาก (แลก: รันที่ถูก kill ไม่มี log แต่รูปยังครบ)</td></tr>
-  <tr><td>ทำไม output เป็นโฟลเดอร์ข้างเคียง</td><td>ตัด bug คลาสสิก "สแกนเจอผลลัพธ์ตัวเอง" ตั้งแต่ต้น</td></tr>
+  <tr><td>ทำไม output อยู่ใน input ชื่อตามขนาด</td><td>ผู้ใช้ต้องการจัดโฟลเดอร์ง่าย — ความปลอดภัยมาจาก scanner ที่ exclude output dir + e2e test กัน nesting</td></tr>
   <tr><td>ทำไมคง ICC แต่ตัด EXIF</td><td>สีถูกต้องข้ามอุปกรณ์ + ตัดข้อมูลส่วนบุคคล (GPS/รุ่นกล้อง) เป็น default ที่ปลอดภัย</td></tr>
 </table>
 

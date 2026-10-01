@@ -2,6 +2,22 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/th-TH/1.1.0/) · เวอร์ชันตาม [SemVer](https://semver.org/lang/th/)
 
+## [1.0.2] — 2026-10-01
+
+### เปลี่ยน (Changed) — เคาะ default ใหม่เพื่อความเร็วสูงสุด
+- **default เป็น JPEG baseline** (แทน progressive) — encode เร็วขึ้น ~33% ไฟล์ใหญ่ขึ้นเพียง ~3%;
+  งานเว็บที่ต้องการ progressive เปิดด้วย `--progressive` (วัดจากการแยก profile รายขั้นของ pipeline)
+- **default kernel เป็น `cubic`** (แทน lanczos3) — เร็วขึ้น ~10% คุณภาพต่างแทบมองไม่เห็น;
+  ต้องการความคมสูงสุดใช้ `--kernel lanczos3`
+- **output เริ่มต้นย้ายเข้าโฟลเดอร์ต้นฉบับ ตั้งชื่อตามขนาด**: `<input>/<max-size>` เช่น `Photos\3800`
+  (ตัวสแกนตัดโฟลเดอร์นี้ออกเสมอ + มี e2e test ยืนยันว่ารันซ้ำไม่เกิด nesting; เปลี่ยนได้ด้วย `-o`)
+
+### ประสิทธิภาพ (i9-9900K, ภาพ 14.2 MP → 3800px, q82)
+- default ใหม่: **~330 MP/s** — +25% จาก v1.0.1, **+78% สะสมจาก v1.0.0**; เร่งจาก 1 เธรด 4.2×
+- โฟลเดอร์ 4,904 รูป 25 GB เสร็จใน ~3.5 นาที (CPU ~100%)
+
+[1.0.2]: https://github.com/NarDecH/NodeJS_Resizer/releases/tag/v1.0.2
+
 ## [1.0.1] — 2026-10-01
 
 ### แก้ไข/เพิ่มประสิทธิภาพ (Fixed / Performance)

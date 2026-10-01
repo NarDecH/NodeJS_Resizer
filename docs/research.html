@@ -26,9 +26,9 @@
 </div>
 
 <div class="kpi">
-  <div class="card"><div class="v">262 MP/s</div><div class="l">throughput สูงสุดที่วัดได้ (CPU 94%)</div></div>
-  <div class="card"><div class="v">5.1×</div><div class="l">เร่งจาก 1 เธรด → parallel workers</div></div>
-  <div class="card"><div class="v">+42%</div><div class="l">จากการแก้ libuv threadpool (v1.0.0 → v1.0.1)</div></div>
+  <div class="card"><div class="v">~330 MP/s</div><div class="l">default ปัจจุบัน (CPU ~100%)</div></div>
+  <div class="card"><div class="v">+78%</div><div class="l">สะสมจาก v1.0.0 (185 → 330 MP/s)</div></div>
+  <div class="card"><div class="v">4.2×</div><div class="l">เร่งจาก 1 เธรด (79 → 329 MP/s)</div></div>
   <div class="card"><div class="v">−78%</div><div class="l">ขนาดรวม 233 MB → 51 MB (q82, 3800px)</div></div>
 </div>
 
@@ -77,7 +77,7 @@
 <p>และวัด <b>CPU utilization จริง</b> ระหว่างรัน 240 รูป (สุ่มค่าทุก 0.5 วินาที):
 ก่อนแก้ (UVT=4) = <b>180.6 MP/s ที่ CPU 53%</b> (พีค 76%) · หลังแก้ (UVT=16) = <b>262.1 MP/s ที่ CPU 94%</b> (พีค 100%)</p>
 
-<h3>ก้าวที่ 3 — benchmark ทางการหลังแก้ (UVT = จำนวนคอร์)</h3>
+<h3>ก้าวที่ 3 — benchmark ทางการหลังแก้ (ค่าตั้ง v1.0.1: progressive + lanczos3, UVT = จำนวนคอร์)</h3>
 <p>ภาพถ่ายจริงจากกล้อง <b>48 รูป</b> (JPEG 4608×3072 = 14.2 MP, รวม 679 MP / 233 MB) ·
 ย่อยาวสุด 3800px, JPEG q82 · <b>Intel i9-9900K (16 เธรด), NVMe SSD, Node 24, sharp 0.35</b> ·
 วัด 1–24 workers × libvips {auto, 1} โดยมี warm-up รอบหนึ่งให้ page cache สภาพเท่ากัน ·
@@ -85,7 +85,7 @@
 
 <figure>
   <img src="assets/concurrency-chart.svg" alt="กราฟ throughput ตามจำนวน workers">
-  <figcaption>Throughput วัดจริงหลังแก้ threadpool — เขียว = libvips auto, เข้ม = libvips 1 เธรด (ค่า default ของเครื่องมือ)</figcaption>
+  <figcaption>Throughput วัดจริงด้วย default ปัจจุบัน (cubic + baseline JPEG) — เขียว = libvips auto, เข้ม = libvips 1 เธรด (ค่า default)</figcaption>
 </figure>
 
 <table>
@@ -111,6 +111,38 @@
 libvips ส่ง scanline ผ่าน pipeline (streaming) ไม่เก็บภาพ raw เต็มใบต่อ pipeline —
 16 pipeline พร้อมกันกับภาพ 14.2 MP ใช้ RSS รวมเพียง <b>~80–170 MB</b> ปลอดภัยแม้เครื่องแรมน้อย</div>
 
+<h2>2b · การเคาะ default รอบที่สอง (v1.0.2) — แยกวัดรายขั้นของ pipeline</h2>
+<p>หลังแก้ threadpool แล้ว CPU วิ่ง ~94% คอขวดที่เหลือจึงอยู่ที่งานต่อรูป — จึงแยกวัดแต่ละขั้น
+ด้วย pipeline variant (48 รูปเดิม, config เดิมยกเว้นขั้นที่ทดสอบ):</p>
+<table>
+  <tr><th>variant</th><th>MP/s(in)</th><th>ตีความ</th></tr>
+  <tr><td>pipeline เต็ม (ค่าตั้ง v1.0.1: lanczos3 + progressive)</td><td>268</td><td>จุดตั้งต้น</td></tr>
+  <tr><td>ตัด progressive (JPEG baseline)</td><td><b>356 (+33%)</b></td><td>progressive เขียน Huffman หลายรอบ — แพงที่สุด; ไฟล์ใหญ่ขึ้นแค่ 3%</td></tr>
+  <tr><td>เปลี่ยน lanczos3 → cubic</td><td><b>296 (+10%)</b></td><td>kernel เร็วกว่า คุณภาพต่างแทบมองไม่เห็นในภาพถ่าย</td></tr>
+  <tr><td>เขียน buffer แทนดิสก์</td><td>284 (+6%)</td><td>ดิสก์ NVMe แทบไม่เป็นคอขวด (เขียน ~17 MB/s)</td></tr>
+  <tr><td>decode เท่านั้น</td><td>898</td><td>decode ≈ 29% ของ pipeline (แก้ไม่ได้ — fastShrinkOnLoad ไม่ช่วยย่อ 1.21×)</td></tr>
+  <tr><td>decode + transpose</td><td>793</td><td>transpose ต้นทุนแค่ ~4% (วัดตรง เพราะ A/B แบบตัด rotate เนื้อภาพเปลี่ยนการบีบอัด)</td></tr>
+  <tr><td>อ่าน header (สแกน)</td><td>235 รูป/วินาที</td><td>ขั้นเตรียมแทบไม่มีต้นทุน</td></tr>
+</table>
+<p><b>การตัดสินใจ (v1.0.2):</b> default เป็น <b>JPEG baseline + kernel cubic</b> (ความเร็วมาก่อนตามโจทย์)
+และเพิ่ม <code>--progressive</code> / <code>--kernel lanczos3</code> สำหรับงานเว็บ/ความคมสูงสุด;
+<code>--skip-smaller</code> สำหรับข้ามงานที่ไม่จำเป็น</p>
+
+<h3>benchmark ทางการด้วย default ใหม่</h3>
+<table>
+  <tr><th>workers</th><th>libvips=auto (MP/s)</th><th>libvips=1 (MP/s)</th><th>เร็วขึ้น ×1 worker</th></tr>
+  <tr><td>1</td><td>77.0</td><td>79.0</td><td>1.0×</td></tr>
+  <tr><td>2</td><td>148.3</td><td>148.1</td><td>1.9×</td></tr>
+  <tr><td>4</td><td>254.6</td><td>259.2</td><td>3.3×</td></tr>
+  <tr><td>6</td><td>319.8</td><td>328.4</td><td>4.2×</td></tr>
+  <tr><td>8</td><td><b>338.9</b></td><td>316.6</td><td>4.0×</td></tr>
+  <tr><td>12</td><td>309.8</td><td>320.4</td><td>4.1×</td></tr>
+  <tr><td>16</td><td>301.7</td><td><b>328.7</b></td><td>4.2×</td></tr>
+  <tr><td>24</td><td>311.7</td><td>325.2</td><td>4.1×</td></tr>
+</table>
+<p>สรุป: default ใหม่ทำ <b>~330 MP/s</b> (workers = จำนวนคอร์) — <b>+25% จาก v1.0.1, +78% สะสมจาก v1.0.0</b>;
+เร่งจาก 1 เธรด 79 → 329 MP/s (4.2×); โฟลเดอร์ 4,904 รูป 25 GB ≈ 3.5 นาที</p>
+
 <h2>3 · ทางลัดจาก libvips (เปิดใช้แล้ว)</h2>
 <table>
   <tr><th>เทคนิค</th><th>ผล</th></tr>
@@ -123,8 +155,9 @@ libvips ส่ง scanline ผ่าน pipeline (streaming) ไม่เก็�
 
 <h2>4 · ฝั่ง encode: ทำไม q82 + progressive</h2>
 <p><b>quality 82 + chroma 4:2:0</b> คือจุดต่ำสุดของเส้น quality/size ที่ตายากเห็น artifact ในภาพถ่าย
-(แนวปฏิบัติเดียวกับเว็บส่วนใหญ่: 75–85) — ชุดทดสอบเล็กลง <b>78%</b> ที่ยาวสุด 3800px ·
-<b>progressive JPEG</b> เล็กกว่า baseline เล็กน้อยและแสดงบนเว็บรู้สึกไวขึ้น ·
+(แนวปฏิบัติเดียวกันกับเว็บส่วนใหญ่: 75–85) — ชุดทดสอบเล็กลง <b>78%</b> ที่ยาวสุด 3800px ·
+ตั้งแต่ v1.0.2 default คือ <b>JPEG baseline</b> (encode เร็วกว่า progressive ~33% แลกไฟล์ใหญ่ ~3% —
+progressive มีประโยชน์เฉพาะแสดงบนเว็บทีละชั้น จึงย้ายเป็น <code>--progressive</code>) ·
 <b>mozjpeg</b> เล็กลงอีก ~25–30% แต่ช้าลง 2–3 เท่า จึงเป็น flag เสริม ไม่ใช่ default (โจทย์หลักคือเร็ว)</p>
 
 <h2>5 · ระดับชุดงาน</h2>
@@ -143,7 +176,7 @@ dry-run ประเมินเวลา/พื้นที่ก่อนล�
 </table>
 
 <div class="callout warn"><b>ข้อจำกัด</b>
-เพดาน ~262 MP/s (CPU 94%) วัดบน NVMe + i9-9900K — บน HDD จะติดเพดานอ่านดิสก์ก่อน (แนะนำ workers 2–4) ·
+เพดาน ~330 MP/s (CPU ~100%) วัดบน NVMe + i9-9900K ด้วย default v1.0.2 — บน HDD จะติดเพดานอ่านดิสก์ก่อน (แนะนำ workers 2–4) ·
 UV_THREADPOOL_SIZE ต้องตั้งก่อน pool ถูกสร้าง — เครื่องมือตั้งให้เองแล้ว แต่ถ้ารัน <code>node src/cli.js</code> ตรง ๆ อาจยังได้ default 4 (ใช้ <code>npm start</code>/resize.bat) ·
 fastShrinkOnLoad อาจให้มิติต่าง ≤1% ในรูปอัตราส่วนพิเศษ ·
 HEIC ขึ้นกับ build ของ libheif (บาง variant เข้ารหัสมีสิทธิ์อ่านไม่ได้ — จะถูกบันทึกเป็น error ต่อไฟล์) ·

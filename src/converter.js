@@ -77,10 +77,13 @@ export async function convertOne(inputFile, outputDir, cfg, relativeDir = '') {
     if (cfg.keepMetadata) pipeline = pipeline.keepMetadata();
     else pipeline = pipeline.keepIccProfile(); // preserve colour profile even when stripping EXIF
 
-    pipeline = pipeline.resize(cfg.maxSize, cfg.maxSize, { fit: 'inside', withoutEnlargement: true });
+    pipeline = pipeline.resize(cfg.maxSize, cfg.maxSize, {
+      fit: 'inside', withoutEnlargement: true,
+      kernel: cfg.kernel ?? 'cubic', // cubic: fastest; lanczos3 (sharpest) via --kernel
+    });
     pipeline = pipeline.jpeg({
       quality: cfg.quality,
-      progressive: true,
+      progressive: cfg.progressive ?? false, // baseline by default: ~33% faster encode, ~3% larger files
       mozjpeg: cfg.mozjpeg,
       chromaSubsampling: '4:2:0',
     });

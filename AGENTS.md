@@ -26,7 +26,8 @@ docs/               เอกสาร md + html + assets/svg — โฮสต�
 
 ## กฎที่ต้องไม่ผิด
 
-1. **Output เริ่มต้นต้องเป็น `<input>-resized` (โฟลเดอร์ข้างเคียง) ไม่ใช่โฟลเดอร์ใน input** — กัน rescan ตัวเอง
+1. **Output เริ่มต้นต้องเป็น `<input>/<max-size>` (เช่น `Photos\3800`) — โฟลเดอร์ใน input ชื่อตามขนาด** —
+   scanner ต้อง exclude output dir เสมอ (ทดสอบแล้วว่ารันซ้ำไม่เกิด nesting `3800/3800`); ผู้ใช้ override ได้ด้วย `-o`
 2. **scanner ต้อง exclude output dir เสมอ** และ skip โฟลเดอร์ `_logs`
 3. **เขียนไฟล์ผลลัพธ์แบบ atomic**: `.part` แล้ว rename — เพื่อให้ resume-safe และไม่มีไฟล์ครึ่ง ๆ กลาง ๆ
 4. **skip existing output คือ default** (`--overwrite` เพื่อ force) — อย่าสลับ
@@ -34,7 +35,8 @@ docs/               เอกสาร md + html + assets/svg — โฮสต�
 6. **Performance model (ห้ามทลายโดยไม่ benchmark ใหม่)** — sharp รัน pipeline บน libuv threadpool ของ Node
    ซึ่ง default มีแค่ 4 เธรด (คอขวดจริง): `src/entry.mjs` และ launchers ตั้ง `UV_THREADPOOL_SIZE` = จำนวนคอร์ให้ก่อนเสมอ;
    `sharp.concurrency(1)` เมื่อ workers > 1 (ปล่อย auto = หลาย pipeline แย่ง vips pool เดียวกัน, ช้ากว่าถึง −30%);
-   `sharp.cache(0)`; ข้อมูลวัด: 262 MP/s, CPU 94% บน i9-9900K (docs/RESEARCH.md)
+   `sharp.cache(0)`; JPEG **baseline** (progressive ช้ากว่า ~33%) + kernel **cubic** (lanczos3 ช้ากว่า ~10%);
+   output = `<input>/<size>`; ข้อมูลวัด: ~330 MP/s, CPU ~100% บน i9-9900K (docs/RESEARCH.md)
 7. **รู้เสมอว่าไฟล์ใดเสีย = error ต่อไฟล์ ไม่ crash ทั้งรัน** exit code: 0 สำเร็จ, 2 มี error บางไฟล์, 1 ระบบล้ม
 8. แก้พฤติกรรมใด ๆ แล้ว **ต้องรัน `npm test` ให้ผ่าน** และอัปเดต docs/CHANGELOG.md
 

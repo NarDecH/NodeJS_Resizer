@@ -23,7 +23,8 @@
 - **แปลงทุกรูปในโฟลเดอร์เป็น JPG อย่างเดียว** — PNG, WebP, TIFF, GIF, SVG, AVIF, HEIC ฯลฯ → `.jpg`
 - **จำกัดขนาดด้านยาวสุด** เช่น 3800px (ปรับได้) — รูปที่เล็กกว่าจะถูก re-encode เป็น JPG โดยไม่ขยาย
 - **หมุนภาพอัตโนมัติตาม EXIF** และคงสีถูกต้องด้วย ICC profile (ตัด EXIF/GPS ออกเพื่อความเป็นส่วนตัว หรือเลือก `--keep-metadata`)
-- **เร็วสุด ๆ ด้วย concurrency อัตโนมัติ** — วิ่งเต็มกำลัง CPU ทุกคอร์ พร้อมจำกัดเธรดของ libvips ให้ไม่ทับกัน (อ่านผลวิจัยทั้งหมดได้ที่ [docs/RESEARCH.md](docs/RESEARCH.md))
+- **เร็วเต็มเครื่องจริง ๆ (~330 MP/s, CPU ~100%)** — ขนานที่ระดับไฟล์เท่าจำนวนคอร์ + ปรับ libuv threadpool ที่ default แค่ 4 เธรด + baseline JPEG + kernel cubic ที่ผ่านการวัดแล้วว่าดีที่สุด (อ่านผลวิจัยทั้งหมดได้ที่ [docs/RESEARCH.md](docs/RESEARCH.md))
+- **ผลลัพธ์อยู่ในโฟลเดอร์ต้นฉบับ ตั้งชื่อตามขนาด** — เช่น `D:\Photos\3800\` (เปลี่ยนได้ด้วย `-o`)
 - **ระบบ log ละเอียดทุกไฟล์** — `.log` สำหรับคนอ่าน + `.jsonl` สำหรับเครื่องวิเคราะห์ + `summary.json` ต่อรัน (รายละเอียดที่ [docs/LOGGING.md](docs/LOGGING.md))
 - **ใช้ต่อจากที่ค้างได้ (resume-safe)** — รันใหม่แล้วข้ามไฟล์ที่เสร็จแล้ว, เขียนไฟล์แบบ atomic, ไฟล์เสียไม่ทำให้ทั้งชุดล้ม
 - **ใช้ง่ายที่สุด** — ดับเบิลคลิก `resize.bat` แล้วลากโฟลเดอร์ใส่ จบ
@@ -39,13 +40,13 @@
 git clone https://github.com/NarDecH/NodeJS_Resizer.git
 cd NodeJS_Resizer
 npm install
-npm start -- -i "D:\Photos"           # → ได้ D:\Photos-resized ขนาดยาวสุด 3800px
+npm start -- -i "D:\Photos"           # → ได้ D:\Photos\3800\ ขนาดยาวสุด 3800px
 ```
 
 **วิธีที่ 3 — สั่งเองเต็มรูปแบบ:**
 
 ```bash
-node src/cli.js -i "D:\Photos" -o "D:\Web" -s 3800 -q 82 -w auto
+node src/cli.js -i "D:\Photos" -o "D:\Web" -s 3800 -q 82
 ```
 
 ตัวอย่างผลลัพธ์:
@@ -53,9 +54,9 @@ node src/cli.js -i "D:\Photos" -o "D:\Web" -s 3800 -q 82 -w auto
 ```
 Summary
   Files      4904 (4904 converted, 0 skipped, 0 errors)
-  WallTime   231.42 s
-  Throughput 21.20 img/s | 301.4 MP/s
-  Size       25.1 GB → 4.8 GB (-20.3 GB, 80.9%)
+  WallTime   211.5 s
+  Throughput 23.19 img/s | 328.4 MP/s
+  Size       25.1 GB → 4.9 GB (-20.2 GB, 80.5%)
 ```
 
 ## ตัวเลือกทั้งหมด
@@ -63,12 +64,15 @@ Summary
 | ตัวเลือก | ค่าเริ่มต้น | ความหมาย |
 | --- | --- | --- |
 | `-i, --input <dir>` | (ถาม) | โฟลเดอร์รูปต้นทาง หรือไฟล์เดียว |
-| `-o, --output <dir>` | `<input>-resized` | โฟลเดอร์ปลายทาง (อยู่ข้างนอก ไม่ข้างใน input) |
+| `-o, --output <dir>` | `<input>/<max-size>` | โฟลเดอร์ปลายทาง (default: โฟลเดอร์ใน input ชื่อตามขนาด เช่น `Photos\3800`) |
 | `-s, --max-size <px>` | `3800` | ความยาวด้านที่ยาวที่สุดที่ยอมให้มีได้ |
 | `-q, --quality <n>` | `82` | คุณภาพ JPEG 1–100 |
 | `-w, --workers <n>` | `auto` | จำนวนรูปที่ประมวลผลพร้อมกัน |
 | `--no-recursive` | recursive | ไม่ลงไปในโฟลเดอร์ย่อย |
 | `--overwrite` | ปิด | แปลงซ้ำทุกไฟล์ (ปกติข้ามไฟล์ที่มีผลลัพธ์แล้ว = resume) |
+| `--skip-smaller` | ปิด | ข้ามรูปที่เล็กกว่า limit อยู่แล้วโดยไม่แปลง (ชุดรูปผสมเร็วขึ้นมาก) |
+| `--kernel <name>` | `cubic` | อัลกอริทึม resize: `cubic` (เร็วสุด) · `lanczos3` (คมสุด) · `lanczos2` · `mks13` |
+| `--progressive` | ปิด (baseline) | เขียน JPEG แบบ progressive — ช้ากว่า ~33% แต่ไฟล์เล็กกว่า ~3% เหมาะกับงานเว็บ |
 | `--keep-metadata` | ปิด | เก็บ EXIF/GPS ไว้ (ปกติตัดทิ้ง แต่คง ICC) |
 | `--mozjpeg` | ปิด | เข้ารหัสแบบ mozjpeg — ไฟล์เล็กลง ~30% แต่ช้าลง 2–3 เท่า |
 | `--dry-run` | ปิด | วางแผนอย่างเดียว ไม่เขียนไฟล์ |
@@ -95,11 +99,10 @@ run-20261001-135627.summary.json ← สรุปรวมของรันน�
 
 ทดสอบบนภาพถ่ายจริง 14.2 MP (4608×3072) ลดเหลือยาวสุด 3800px บน Intel Core i9-9900K:
 
-- ทำได้ **~260 MP/s** (~16 รูป/วินาที — โฟลเดอร์ 4,904 รูป 25 GB เสร็จใน ~4.5 นาที) โดย **CPU วิ่ง 94%** เต็มเครื่อง
-- เร่งจาก 1 เธรด (51 MP/s) ได้ **5.1 เท่า**; อิ่มตัวที่ workers ≈ 8–16
-- ข้อค้นพบสำคัญ: sharp รูปหนึ่ง pipeline บน **libuv threadpool ของ Node (default แค่ 4 เธรด)** —
-  ตั้ง `UV_THREADPOOL_SIZE` ให้เท่าจำนวนคอร์ (เครื่องมือทำให้เองแล้ว) รวมกับ pin libvips = 1 เธรด
-  ให้ throughput +42% และ CPU จาก 53% → 94% (ข้อมูลและกราฟจริงทั้งหมดใน [docs/RESEARCH.md](docs/RESEARCH.md))
+- ค่า default ปัจจุบัน (v1.0.2: baseline JPEG + cubic kernel) ทำได้ **~330 MP/s** (~20 รูป/วินาที — โฟลเดอร์ 4,904 รูป 25 GB เสร็จใน ~3.5 นาที) โดย **CPU วิ่ง ~100%**
+- เร่งจาก 1 เธรด (79 MP/s) ได้ **4.2 เท่า**; อิ่มตัวที่ workers ≈ 8–16
+- สะสมจาก v1.0.0 (185 MP/s) รวม **+78%** จาก 3 การแก้: libuv threadpool (default 4 เธรด → เท่าคอร์), baseline JPEG, cubic kernel
+- ข้อมูลและกราฟจริงทั้งหมด (รวมการแยกวัดรายขั้นของ pipeline) ใน [docs/RESEARCH.md](docs/RESEARCH.md)
 
 ## เอกสารทั้งหมด
 

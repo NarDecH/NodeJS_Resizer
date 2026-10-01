@@ -25,6 +25,17 @@
   <p>รูปแบบอ้างอิง Keep a Changelog · เวอร์ชันตาม SemVer</p>
 </div>
 
+<h2>v1.0.2 — 1 ตุลาคม 2026 <span class="badge">performance</span></h2>
+
+<h3>เคาะ default ใหม่เพื่อความเร็วสูงสุด (Changed)</h3>
+<ul>
+  <li><b>JPEG baseline เป็น default</b> (แทน progressive) — encode เร็วขึ้น ~33% ไฟล์ใหญ่ขึ้นเพียง ~3%; ต้องการ progressive ใช้ <code>--progressive</code></li>
+  <li><b>kernel cubic เป็น default</b> (แทน lanczos3) — เร็วขึ้น ~10%; ต้องการความคมสูงสุดใช้ <code>--kernel lanczos3</code></li>
+  <li><b>output เริ่มต้นอยู่ในโฟลเดอร์ต้นฉบับ ชื่อตามขนาด</b>: <code>&lt;input&gt;/&lt;max-size&gt;</code> เช่น <code>Photos\3800</code> — scanner ตัดโฟลเดอร์นี้ออกเสมอ + e2e test ยืนยันว่ารันซ้ำไม่เกิด nesting; เปลี่ยนได้ด้วย <code>-o</code></li>
+  <li>ผลรวม: <b>~330 MP/s</b> (+25% จาก v1.0.1, +78% สะสมจาก v1.0.0) — โฟลเดอร์ 4,904 รูป 25 GB ≈ 3.5 นาที</li>
+  <li>การตัดสินใจทั้งหมดอ้างข้อมูลจากการแยก profile รายขั้นของ pipeline (ดู <a href="research.html">RESEARCH หัวข้อ 7</a>)</li>
+</ul>
+
 <h2>v1.0.1 — 1 ตุลาคม 2026 <span class="badge">performance</span></h2>
 
 <h3>แก้คอขวดที่ซ่อนอยู่ (Performance)</h3>
